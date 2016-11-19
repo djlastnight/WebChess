@@ -1,0 +1,33 @@
+body {
+    background-color: #c89d59;
+}
+
+div#menu {
+    width: 480px;
+    margin-left: auto;
+    margin-right: auto;
+    background-color: inherit;
+    padding: 10px;
+    text-align: center;
+    border: 10px ridge black;
+    border-radius: 20px;
+}
+
+div#chess_board {
+    margin-left: auto;
+    margin-right: auto;
+    border: 10px ridge gray;
+    visibility: hidden;
+}
+
+input#input_cell_width {
+    background-color: inherit;
+    color: inherit;
+}
+
+table#chess_table {
+    -webkit-transition: all 0.5s ease-in-out;
+    -moz-transition: all 0.5s ease-in-out;
+    -o-transition: all 0.5s ease-in-out;
+    transition: all 0.5s ease-in-out;
+}
