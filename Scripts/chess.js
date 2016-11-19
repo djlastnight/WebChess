@@ -13,7 +13,7 @@ selectImageSource = "images/underlay_yellow.png";
 highlightImageSource = "images/underlay_blue.png";
 captionImageSource = "images/underlay_red.png";
 selectedImage = null;
-whiteStartsFirst = null;
+isWhiteAtBottom = null;
 currentPlayerColor = null;
 whiteRadioButton = null;
 
@@ -211,7 +211,7 @@ function isPossibleMove(oldRow, newRow, oldCol, newCol, fType, fColor) {
         case FigureType.Pawn:
             {
                 var isBlack = fColor == FigureColor.Black;
-                if (!whiteStartsFirst) {
+                if (!isWhiteAtBottom) {
                     // deny the black pawn backwards move
                     if (isBlack && deltaRow > 0) {
                         return false;
@@ -233,7 +233,7 @@ function isPossibleMove(oldRow, newRow, oldCol, newCol, fType, fColor) {
                 }
                 var isTargetEmpty = targetColor == "None";
                 var isDefaultSquare;
-                if (!whiteStartsFirst) {
+                if (!isWhiteAtBottom) {
 
                     isDefaultSquare = (isBlack && oldRow == 6) || (!isBlack && oldRow == 1);
                 }
@@ -241,7 +241,7 @@ function isPossibleMove(oldRow, newRow, oldCol, newCol, fType, fColor) {
                     isDefaultSquare = (isBlack && oldRow == 1 || !isBlack && oldRow == 6);
                 }
                 var doubleMoveRow;
-                if (!whiteStartsFirst) {
+                if (!isWhiteAtBottom) {
                     doubleMoveRow = isBlack ? 4 : 3;
                 } else {
                     doubleMoveRow = isBlack ? 3 : 4;
@@ -471,8 +471,8 @@ function showColorChooser() {
     okButton.onclick = function () {
         document.getElementById("menu").style.visibility = "visible";
         board.innerHTML = "";
-        whiteStartsFirst = whiteRadioButton.checked;
-        currentPlayerColor = whiteStartsFirst ? PlayerColor.White : PlayerColor.Black;
+        isWhiteAtBottom = whiteRadioButton.checked;
+        currentPlayerColor = PlayerColor.White;
         body.removeChild(initialForm);
         drawChessBoard();
     };
@@ -525,10 +525,10 @@ function createFigure(row, col) {
     var isPenultimateRow = row == 1 || row == 6;
     var color;
     if (row > 1) {
-        color = !whiteStartsFirst ? FigureColor.Black : FigureColor.White
+        color = !isWhiteAtBottom ? FigureColor.Black : FigureColor.White
     }
     else {
-        color = !whiteStartsFirst ? FigureColor.White : FigureColor.Black;
+        color = !isWhiteAtBottom ? FigureColor.White : FigureColor.Black;
     }
 
     var isRook = !(col % (n - 1));
@@ -538,33 +538,27 @@ function createFigure(row, col) {
     var isKing = col == 3;
 
     if (isPenultimateRow) {
-        // пешка
         return new Figure(FigureType.Pawn, color, row, col);;
     }
 
     if (isFirstOrLastRow) {
         if (isRook) {
-            // топ
             return new Figure(FigureType.Rook, color, row, col);
         }
 
         if (isKnight) {
-            // кон
             return new Figure(FigureType.Knight, color, row, col);
         }
 
         if (isBishop) {
-            // офицер
             return new Figure(FigureType.Bishop, color, row, col);
         }
 
         if (isQueen) {
-            // царица
             return new Figure(FigureType.Queen, color, row, col);
         }
 
         if (isKing) {
-            // цар
             return new Figure(FigureType.King, color, row, col);
         }
     }
@@ -643,7 +637,7 @@ function resetCells() {
                 continue;
             }
 
-            subImages[0].style.width = (cellSize) + "px";
+            subImages[0].style.width = (cellSize - 5) + "px";
         }
     }
     
