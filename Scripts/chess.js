@@ -1,49 +1,46 @@
 // Global variables
 initialForm = null;
-body = document.getElementsByTagName("body")[0];
 timeout = undefined;
 tooltip = undefined;
 numberSelector = document.getElementById("input_cell_width");
 toggleButton = document.getElementById("input_toggle");
 board = document.getElementById("chess_board");
-intervalInMilliseconds = 1000;
-clockContainer = document.getElementById("clockContainer");
 date = new Date();
-selectImageSource = "Images/Underlay_Yellow.png";
-highlightImageSource = "Images/Underlay_Blue.png";
-captionImageSource = "Images/Underlay_Red.png";
+selectImageSource = "images/underlay_yellow.png";
+highlightImageSource = "images/underlay_blue.png";
+captionImageSource = "images/underlay_red.png";
 selectedImage = null;
 isWhiteAtBottom = null;
 currentPlayerColor = null;
-whiteRadioButton = null;
+chooseWhiteRadioButton = null;
 
 // Player Color Enumeration
 PlayerColor = {
-    White: "White",
-    Black: "Black"
+    white: "white",
+    black: "black"
 };
 
 // Figure Type Enumeration
 FigureType = {
-    None: "None",
-    Pawn: "Pawn",
-    Rook: "Rook",
-    Knight: "Knight",
-    Bishop: "Bishop",
-    King: "King",
-    Queen: "Queen"
+    none: "none",
+    pawn: "pawn",
+    rook: "rook",
+    knight: "knight",
+    bishop: "bishop",
+    king: "king",
+    queen: "queen"
 };
 
 // Figure Color Enumeration
 FigureColor = {
-    Black: "Black",
-    White: "White",
+    black: "black",
+    white: "white",
 };
 
 // Figure Location constructor
 function FigureLocation(row, col) {
-    this.Row = row;
-    this.Col = col;
+    this.row = row;
+    this.col = col;
 }
 
 // Figure constructor
@@ -55,8 +52,10 @@ function Figure(figureType, figureColor, row, col) {
 
 // Figure toString() override
 Figure.prototype.toString = function () {
-    return this.figureColor + " " + this.figureType + " on Row " +
-	this.figureLocation.Row + ", Column " + this.figureLocation.Col;
+    var str = this.figureColor + " " + this.figureType + " on Row " +
+	this.figureLocation.row + ", Column " + this.figureLocation.col;
+
+    return str;
 }
 
 // Function, which returns correct object type
@@ -65,8 +64,8 @@ var getTypeOf = function (obj) {
 }
 
 function toggleCurrentPlayerColor() {
-    var isCurrentBlack = currentPlayerColor == PlayerColor.Black;
-    currentPlayerColor = isCurrentBlack ? PlayerColor.White : PlayerColor.Black;
+    var isCurrentBlack = currentPlayerColor == PlayerColor.black;
+    currentPlayerColor = isCurrentBlack ? PlayerColor.white : PlayerColor.black;
 }
 
 function isHighlightedCell(row, col) {
@@ -208,9 +207,9 @@ function isPossibleMove(oldRow, newRow, oldCol, newCol, fType, fColor) {
     }
 
     switch (fType) {
-        case FigureType.Pawn:
+        case FigureType.pawn:
             {
-                var isBlack = fColor == FigureColor.Black;
+                var isBlack = fColor == FigureColor.black;
                 if (!isWhiteAtBottom) {
                     // deny the black pawn backwards move
                     if (isBlack && deltaRow > 0) {
@@ -254,14 +253,14 @@ function isPossibleMove(oldRow, newRow, oldCol, newCol, fType, fColor) {
             }
 
             break;
-        case FigureType.Rook:
+        case FigureType.rook:
             {
                 return isLegalOrthogonalMove(newRow, newCol, deltaRow, deltaCol, topBorder, bottomBorder, leftBorder, rightBorder);
             }
 
             break;
 
-        case FigureType.Knight:
+        case FigureType.knight:
             {
                 if (absDeltaRow == 2 && absDeltaCol == 1 ||
             		absDeltaRow == 1 && absDeltaCol == 2) {
@@ -271,14 +270,14 @@ function isPossibleMove(oldRow, newRow, oldCol, newCol, fType, fColor) {
 
             break;
 
-        case FigureType.Bishop:
+        case FigureType.bishop:
             {
                 return isLegalDiagonalMove(oldRow, newRow, oldCol, newCol, absDeltaRow, absDeltaCol, topLeftBorder, topRightBorder, bottomLeftBorder, bottomRightBorder);
             }
 
             break;
 
-        case FigureType.Queen:
+        case FigureType.queen:
             {
                 var diagonal = isLegalDiagonalMove(oldRow, newRow, oldCol, newCol, absDeltaRow, absDeltaCol, topLeftBorder, topRightBorder, bottomLeftBorder, bottomRightBorder);
                 var ortho = isLegalOrthogonalMove(newRow, newCol, deltaRow, deltaCol, topBorder, bottomBorder, leftBorder, rightBorder);
@@ -288,7 +287,7 @@ function isPossibleMove(oldRow, newRow, oldCol, newCol, fType, fColor) {
 
             break;
 
-        case FigureType.King:
+        case FigureType.king:
             {
                 if (absDeltaRow <= 1 && absDeltaCol <= 1) {
                     return true;
@@ -402,7 +401,7 @@ function onCellClick(cell) {
 
 function showTooltip(cell, messageLine1, messageLine2) {
     var cellRect = cell.getBoundingClientRect();
-    var bodyRect = body.getBoundingClientRect();
+    var bodyRect = document.body.getBoundingClientRect();
     var borderSize = 10;
 
     if (tooltip == undefined) {
@@ -415,19 +414,19 @@ function showTooltip(cell, messageLine1, messageLine2) {
         tooltip.style.fontSize = "12pt";
     }
 
-    if (timeout != undefined && body.getElementsByClassName("tooltip").length == 1) {
+    if (timeout != undefined && document.body.getElementsByClassName("tooltip").length == 1) {
         // Hiding the active tooltip
         timeout = clearTimeout(timeout);
-        body.removeChild(tooltip);
+        document.body.removeChild(tooltip);
     }
 
     tooltip.style.top = (cellRect.top - bodyRect.top + borderSize) + "px";
     tooltip.style.left = (cellRect.left - bodyRect.left + borderSize) + "px";
     tooltip.style.width = (Math.max(messageLine1.length, messageLine2.length) * tooltip.style.fontSize) + "pt";
     tooltip.innerHTML = messageLine1 + "<br />" + messageLine2;
-    body.appendChild(tooltip);
+    document.body.appendChild(tooltip);
     timeout = setTimeout(function () {
-        body.removeChild(tooltip);
+        document.body.removeChild(tooltip);
     }, 1500);
 }
 
@@ -452,7 +451,7 @@ function showColorChooser() {
     var whiteLabel = document.createElement("label");
     whiteLabel.htmlFor = "radio_white";
     whiteLabel.innerHTML = "White";
-    whiteRadioButton = radioWhite;
+    chooseWhiteRadioButton = radioWhite;
 
     var radioBlack = document.createElement("input");
     radioBlack.id = "radio_black";
@@ -471,9 +470,9 @@ function showColorChooser() {
     okButton.onclick = function () {
         document.getElementById("menu").style.visibility = "visible";
         board.innerHTML = "";
-        isWhiteAtBottom = whiteRadioButton.checked;
-        currentPlayerColor = PlayerColor.White;
-        body.removeChild(initialForm);
+        isWhiteAtBottom = chooseWhiteRadioButton.checked;
+        currentPlayerColor = PlayerColor.white;
+        document.body.removeChild(initialForm);
         drawChessBoard();
     };
 
@@ -487,7 +486,7 @@ function showColorChooser() {
     form.appendChild(okButton);
     document.getElementById("menu").style.visibility = "hidden";
     initialForm = form;
-    body.appendChild(form);
+    document.body.appendChild(form);
 }
 
 function highlightPossibleMoves(img) {
@@ -525,10 +524,10 @@ function createFigure(row, col) {
     var isPenultimateRow = row == 1 || row == 6;
     var color;
     if (row > 1) {
-        color = !isWhiteAtBottom ? FigureColor.Black : FigureColor.White
+        color = !isWhiteAtBottom ? FigureColor.black : FigureColor.white
     }
     else {
-        color = !isWhiteAtBottom ? FigureColor.White : FigureColor.Black;
+        color = !isWhiteAtBottom ? FigureColor.white : FigureColor.black;
     }
 
     var isRook = !(col % (n - 1));
@@ -538,32 +537,32 @@ function createFigure(row, col) {
     var isKing = col == 3;
 
     if (isPenultimateRow) {
-        return new Figure(FigureType.Pawn, color, row, col);;
+        return new Figure(FigureType.pawn, color, row, col);;
     }
 
     if (isFirstOrLastRow) {
         if (isRook) {
-            return new Figure(FigureType.Rook, color, row, col);
+            return new Figure(FigureType.rook, color, row, col);
         }
 
         if (isKnight) {
-            return new Figure(FigureType.Knight, color, row, col);
+            return new Figure(FigureType.knight, color, row, col);
         }
 
         if (isBishop) {
-            return new Figure(FigureType.Bishop, color, row, col);
+            return new Figure(FigureType.bishop, color, row, col);
         }
 
         if (isQueen) {
-            return new Figure(FigureType.Queen, color, row, col);
+            return new Figure(FigureType.queen, color, row, col);
         }
 
         if (isKing) {
-            return new Figure(FigureType.King, color, row, col);
+            return new Figure(FigureType.king, color, row, col);
         }
     }
 
-    return new Figure(FigureType.None, color, row, col);
+    return new Figure(FigureType.none, color, row, col);
 }
 
 function drawChessBoard() {
@@ -599,11 +598,11 @@ function addDefaultFigures() {
     for (var i = 0; i < 8; i++) {
         for (var j = 0; j < 8; j++) {
             var figure = createFigure(i, j);
-            if (figure.figureType == FigureType.None) {
+            if (figure.figureType == FigureType.none) {
                 continue;
             }
 
-            var imageSource = "Images/" + figure.figureType + "_" + figure.figureColor + ".png";
+            var imageSource = "images/" + figure.figureType + "_" + figure.figureColor + ".png";
             var figureImage = document.createElement("img");
             figureImage.src = imageSource;
             figureImage.width = numberSelector.value - 5;
@@ -622,8 +621,8 @@ function addDefaultFigures() {
 
 function resetCells() {
     var cellSize = Number(numberSelector.value);
-    var blackCellBg = "transparent url(Images/Marble_Black.jpg) no-repeat center center";
-    var whiteCellBg = "transparent url(Images/Marble_White.jpg) no-repeat center center";
+    var blackCellBg = "transparent url(images/marble_black.jpg) no-repeat center center";
+    var whiteCellBg = "transparent url(images/marble_white.jpg) no-repeat center center";
     for (var i = 0; i < 8; i++) {
         for (var j = 0; j < 8; j++) {
             var cell = document.getElementById("cell_" + i + j);

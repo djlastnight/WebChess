@@ -2,17 +2,16 @@
 <html>
 <head>
     <meta charset="utf-8" />
-    <link href="Styles/chess.css" rel="stylesheet" />
+    <link href="styles/chess.css" rel="stylesheet" />
     <title>Chess</title>
 </head>
 <body>
-    <span id="clockContainer"></span>
     <div id="menu">
         Choose board cell size:
         <input type="number" min="10" max="200" value="56" id="input_cell_width" onchange="resetCells();" />
         <input type="checkbox" onchange="toggleChessBoardVisibility();" id="input_toggle"> Show Chess Board
     </div>
     <div id="chess_board"></div>
-    <script src="Scripts/chess.js"></script>
+    <script src="scripts/chess.js"></script>
 </body>
 </html>
