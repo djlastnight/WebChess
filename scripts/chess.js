@@ -1,11 +1,12 @@
 // Global variables
 initialForm = null;
-timeout = undefined;
 tooltip = undefined;
+tooltipTimeout = undefined;
 numberSelector = document.getElementById("input_cell_width");
 toggleButton = document.getElementById("input_toggle");
 board = document.getElementById("chess_board");
 date = new Date();
+backgroundImageSourcePrefix = "marble_"; // example: marble_white.jpg, marble_black.jpg
 selectImageSource = "images/underlay_yellow.png";
 highlightImageSource = "images/underlay_blue.png";
 captionImageSource = "images/underlay_red.png";
@@ -34,7 +35,7 @@ FigureType = {
 // Figure Color Enumeration
 FigureColor = {
     black: "black",
-    white: "white",
+    white: "white"
 };
 
 // Figure Location constructor
@@ -68,12 +69,13 @@ function toggleCurrentPlayerColor() {
     currentPlayerColor = isCurrentBlack ? PlayerColor.white : PlayerColor.black;
 }
 
-function isHighlightedCell(row, col) {
+function isCellHighlighted(row, col) {
     var target = document.getElementById("cell_" + row + col);
-    // If have marbe in the bg name, which means the cell is highlighted
-    return target.style.background.indexOf("marble") == -1;
+    // Assuming that if bg is different from default, the cell is highlighted
+    return target.style.background.indexOf(backgroundImageSourcePrefix) == -1;
 }
 
+// Returns FigureColor.white || FigureColor.black || null
 function getFigureColor(row, col) {
     var target = document.getElementById("cell_" + row + col);
     var subImages = target.getElementsByTagName("img");
@@ -174,17 +176,6 @@ function move(element, oldRow, newRow, oldCol, newCol, targetCell) {
     sourceCell.innerHTML = "";
 }
 
-function animateMovement() {
-    var rotated = false;
-    var div = document.getElementById('chess_table'), deg = rotated ? 0 : 66;
-
-    div.style.webkitTransform = 'rotate(' + deg + 'deg)';
-    div.style.mozTransform = 'rotate(' + deg + 'deg)';
-    div.style.msTransform = 'rotate(' + deg + 'deg)';
-    div.style.oTransform = 'rotate(' + deg + 'deg)';
-    div.style.transform = 'rotate(' + deg + 'deg)';
-}
-
 function isPossibleMove(oldRow, newRow, oldCol, newCol, fType, fColor) {
     var deltaRow = newRow - oldRow;
     var deltaCol = newCol - oldCol;
@@ -211,28 +202,28 @@ function isPossibleMove(oldRow, newRow, oldCol, newCol, fType, fColor) {
             {
                 var isBlack = fColor == FigureColor.black;
                 if (!isWhiteAtBottom) {
-                    // deny the black pawn backwards move
                     if (isBlack && deltaRow > 0) {
+                        // Deny the black pawn backwards move
                         return false;
                     }
 
-                    // deny the white pawn backwards move
                     if (!isBlack && deltaRow < 0) {
+                        // Deny the white pawn backwards move
                         return false;
                     }
                 } else {
                     if (isBlack && deltaRow < 0) {
+                        // Deny the black pawn backwards move
                         return false;
                     }
 
                     if (!isBlack && deltaRow > 0) {
+                        // Deny the white pawn backwards move
                         return false;
                     }
                 }
 
-                var isTargetEmpty = targetColor == null;
                 var isDefaultSquare;
-
                 if (!isWhiteAtBottom) {
                     isDefaultSquare = (isBlack && oldRow == 6) || (!isBlack && oldRow == 1);
                 } else {
@@ -246,8 +237,9 @@ function isPossibleMove(oldRow, newRow, oldCol, newCol, fType, fColor) {
                     doubleMoveRow = isBlack ? 3 : 4;
                 }
 
+                var isTargetEmpty = targetColor == null;
                 var isSingleMove = (oldCol == newCol) && absDeltaRow == 1 && isTargetEmpty;
-                var isDoubleMove = (oldCol == newCol) && isDefaultSquare && absDeltaRow == 2 && !isHighlightedCell(doubleMoveRow, oldCol) && isTargetEmpty;
+                var isDoubleMove = (oldCol == newCol) && isDefaultSquare && absDeltaRow == 2 && !isCellHighlighted(doubleMoveRow, oldCol) && isTargetEmpty;
                 var isDiagonalMove = absDeltaRow == 1 && absDeltaCol == 1 && isTargetEmpty == false;
 
                 return (isSingleMove || isDoubleMove || isDiagonalMove);
@@ -352,10 +344,12 @@ function onCellClick(cell) {
         return;
     }
 
+    hideTooltip();
+
     var newRow = cell.dataset.row;
     var newCol = cell.dataset.col;
     var hasFigure = getFigureColor(newRow, newCol) != null;
-    var isHighlighted = isHighlightedCell(newRow, newCol);
+    var isHighlighted = isCellHighlighted(newRow, newCol);
     if (!hasFigure && !isHighlighted) {
         resetCells();
         return;
@@ -415,20 +409,24 @@ function showTooltip(cell, messageLine1, messageLine2) {
         tooltip.style.fontSize = "12pt";
     }
 
-    if (timeout != undefined && document.body.getElementsByClassName("tooltip").length == 1) {
-        // Hiding the active tooltip
-        timeout = clearTimeout(timeout);
-        document.body.removeChild(tooltip);
-    }
+    hideTooltip();
 
     tooltip.style.top = (cellRect.top - bodyRect.top + borderSize) + "px";
     tooltip.style.left = (cellRect.left - bodyRect.left + borderSize) + "px";
     tooltip.style.width = (Math.max(messageLine1.length, messageLine2.length) * tooltip.style.fontSize) + "pt";
     tooltip.innerHTML = messageLine1 + "<br />" + messageLine2;
     document.body.appendChild(tooltip);
-    timeout = setTimeout(function () {
+    tooltipTimeout = setTimeout(function () {
         document.body.removeChild(tooltip);
     }, 1500);
+}
+
+function hideTooltip() {
+    if (tooltipTimeout != undefined && document.body.getElementsByClassName("tooltip").length == 1) {
+        // Hiding the active tooltip
+        tooltipTimeout = clearTimeout(tooltipTimeout);
+        document.body.removeChild(tooltip);
+    }
 }
 
 function showColorChooser() {
@@ -492,7 +490,7 @@ function showColorChooser() {
 
 function highlightPossibleMoves(img) {
     if (img == undefined) {
-        throw "Cannot highlight, because passed img is undefined";
+        throw "Cannot highlight possible moves, because passed img is undefined";
         return;
     }
 
@@ -622,8 +620,8 @@ function addDefaultFigures() {
 
 function resetCells() {
     var cellSize = Number(numberSelector.value);
-    var blackCellBg = "transparent url(images/marble_black.jpg) no-repeat center center";
-    var whiteCellBg = "transparent url(images/marble_white.jpg) no-repeat center center";
+    var blackCellBg = "transparent url(images/" + backgroundImageSourcePrefix + "black.jpg) no-repeat center center";
+    var whiteCellBg = "transparent url(images/" + backgroundImageSourcePrefix + "white.jpg) no-repeat center center";
     for (var i = 0; i < 8; i++) {
         for (var j = 0; j < 8; j++) {
             var cell = document.getElementById("cell_" + i + j);
@@ -642,7 +640,6 @@ function resetCells() {
     }
     
     board.style.width = ((cellSize + 4) * 8) + 'px';
-    //board.style.height = board.style.width;
     board.style.textAlign = "center";
     board.style.verticalAlign = "center";
 
@@ -651,52 +648,53 @@ function resetCells() {
         toggleButton.checked = true;
         toggleChessBoardVisibility();
     }
+
     selectedImage = null;
 }
 
-function changeBgColor() {
-    var red = Math.random() * 255;
-    var green = Math.random() * 255;
-    var blue = Math.random() * 255;
-    var hexColor = "#" + byteToHex(red) + byteToHex(green) + byteToHex(blue);
-
-    if (hexColor.length != 7) {
-        throw "Invalid hex color: " + hexColor;
-        return;
-    }
-
-    document.body.style.backgroundColor = hexColor;
-    document.body.style.color = (red + green + blue) < 300 ? "White" : "Black";
-}
-
-function byteToHex(byte) {
-    byte = Math.abs(Math.floor(byte) % 255);
-    var hex = byte.toString(16);
-    if (hex.length == 1) {
-        hex = "0" + hex;
-    }
-
-    return hex;
-}
-
-function createTimer() {
-    timer = window.setInterval(timerTick, intervalInMilliseconds);
-}
-
-function timerTick() {
-    date.setMilliseconds(date.getMilliseconds() + intervalInMilliseconds);
-    var hours = date.getHours();
-    var minutes = date.getMinutes();
-    var seconds = date.getSeconds();
-
-    hours = hours < 10 ? "0" + hours : hours;
-    minutes = minutes < 10 ? "0" + minutes : minutes;
-    seconds = seconds < 10 ? "0" + seconds : seconds;
-
-    clockContainer.innerHTML = "Time now is " + hours + ":" + minutes + ":" + seconds;
-    if (seconds % 30 == 0) {
-        changeBgColor();
-    }
-}
-
 showColorChooser();
+
+//function changeBgColor() {
+//    var red = Math.random() * 255;
+//    var green = Math.random() * 255;
+//    var blue = Math.random() * 255;
+//    var hexColor = "#" + byteToHex(red) + byteToHex(green) + byteToHex(blue);
+
+//    if (hexColor.length != 7) {
+//        throw "Invalid hex color: " + hexColor;
+//        return;
+//    }
+
+//    document.body.style.backgroundColor = hexColor;
+//    document.body.style.color = (red + green + blue) < 300 ? "White" : "Black";
+//}
+
+//function byteToHex(byte) {
+//    byte = Math.abs(Math.floor(byte) % 255);
+//    var hex = byte.toString(16);
+//    if (hex.length == 1) {
+//        hex = "0" + hex;
+//    }
+
+//    return hex;
+//}
+
+//function createTimer() {
+//    timer = window.setInterval(timerTick, intervalInMilliseconds);
+//}
+
+//function timerTick() {
+//    date.setMilliseconds(date.getMilliseconds() + intervalInMilliseconds);
+//    var hours = date.getHours();
+//    var minutes = date.getMinutes();
+//    var seconds = date.getSeconds();
+
+//    hours = hours < 10 ? "0" + hours : hours;
+//    minutes = minutes < 10 ? "0" + minutes : minutes;
+//    seconds = seconds < 10 ? "0" + seconds : seconds;
+
+//    clockContainer.innerHTML = "Time now is " + hours + ":" + minutes + ":" + seconds;
+//    if (seconds % 30 == 0) {
+//        changeBgColor();
+//    }
+//}
