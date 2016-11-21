@@ -429,7 +429,7 @@ function hideTooltip() {
     }
 }
 
-function showColorChooser() {
+function showColorChooserForm() {
     var content = "Please choose the color of prefered by you pieces:";
     var form = document.createElement("form");
     form.style.textAlign = "center";
@@ -532,8 +532,8 @@ function createFigure(row, col) {
     var isRook = !(col % (n - 1));
     var isKnight = col == 1 || col == 6;
     var isBishop = col == 2 || col == 5;
-    var isQueen = col == 4;
-    var isKing = col == 3;
+    var isQueen = isWhiteAtBottom ? col == 3 : col == 4;
+    var isKing = isWhiteAtBottom ? col == 4 : col == 3;
 
     if (isPenultimateRow) {
         return new Figure(FigureType.pawn, color, row, col);;
@@ -652,7 +652,7 @@ function resetCells() {
     selectedImage = null;
 }
 
-showColorChooser();
+showColorChooserForm();
 
 //function changeBgColor() {
 //    var red = Math.random() * 255;
