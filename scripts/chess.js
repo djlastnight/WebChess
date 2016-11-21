@@ -4,6 +4,7 @@ tooltip = undefined;
 tooltipTimeout = undefined;
 numberSelector = document.getElementById("input_cell_width");
 toggleButton = document.getElementById("input_toggle");
+mainTable = document.getElementById("main_table");
 board = document.getElementById("chess_board");
 date = new Date();
 backgroundImageSourcePrefix = "marble_"; // example: marble_white.jpg, marble_black.jpg
@@ -15,6 +16,7 @@ isWhiteAtBottom = null;
 currentPlayerColor = null;
 chooseWhiteRadioButton = null;
 isRotated = false;
+isRotationEnabled = true;
 
 // Player Color Enumeration
 PlayerColor = {
@@ -68,32 +70,61 @@ var getTypeOf = function (obj) {
 function toggleCurrentPlayerColor() {
     var isCurrentBlack = currentPlayerColor == PlayerColor.black;
     currentPlayerColor = isCurrentBlack ? PlayerColor.white : PlayerColor.black;
-
-    // Rotating the board
-    var angleZ = isRotated ? 0 : 180;
-    rotateZ(board, angleZ);
-    for (var i = 0; i < 8; i++) {
-        for (var j = 0; j < 8; j++) {
-            var cell = document.getElementById("cell_" + i + j);
-            rotateZ(cell, angleZ);
-        }
-    }
-
+    rotateTheBoard();
     isRotated = !isRotated;
 }
 
-function rotateZ(element, angle) {
+function rotateTheBoard() {
+    // Rotating the board
+    var angleZ = isRotated ? 0 : 180;
+    rotateZ(mainTable, angleZ, 1.0, 0.5);
+    for (var i = 0; i < 8; i++) {
+        for (var j = 0; j < 8; j++) {
+            var cell = document.getElementById("cell_" + i + j);
+            rotateZ(cell, angleZ, 1.0, 0.5);
+        }
+    }
+
+    // Rotating the captured pieces
+    var capturedImages = document.getElementsByClassName("captured");
+    Array.prototype.forEach.call(capturedImages, function (captured) {
+        rotateZ(captured, angleZ, 1.0, 0.5);
+    });
+}
+
+function rotateZ(element, angle, durationInSeconds, delayInSeconds) {
+    if (!isRotationEnabled) {
+        return;
+    }
+
+    if (element === undefined) {
+        throw "Can not rotateZ() element, which is undefined!";
+        return;
+    }
+
+    durationInSeconds = durationInSeconds || 0;
+    delayInSeconds = delayInSeconds || 0;
+    angle = angle % 360;
+    durationInSeconds = durationInSeconds < 0 ? 0 : durationInSeconds;
+    delayInSeconds = delayInSeconds < 0 ? 0 : delayInSeconds;
+
     element.style.webkitTransform = 'rotateZ(' + angle + 'deg)';
     element.style.mozTransform = 'rotateZ(' + angle + 'deg)';
     element.style.msTransform = 'rotateZ(' + angle + 'deg)';
     element.style.oTransform = 'rotateZ(' + angle + 'deg)';
     element.style.transform = 'rotateZ(' + angle + 'deg)';
 
-    element.style.webkitTransition = " transform 2.0s ease-in-out";
-    element.style.mozTransition = " transform 2.0s ease-in-out";
-    element.style.msTransition = " transform 2.0s ease-in-out";
-    element.style.oTransition = " transform 2.0s ease-in-out";
-    element.style.transition = " transform 2.0s ease-in-out";
+    element.style.webkitTransition = " transform " + durationInSeconds + "s ease-in-out";
+    element.style.mozTransition = " transform " + durationInSeconds + "s ease-in-out";
+    element.style.msTransition = " transform " + durationInSeconds + "s ease-in-out";
+    element.style.oTransition = " transform " + durationInSeconds + "s ease-in-out";
+    element.style.transition = " transform " + durationInSeconds + "s ease-in-out";
+
+    element.style.webkitTransitionDelay = delayInSeconds + "s";
+    element.style.mozTransitionDelay = delayInSeconds + "s";
+    element.style.msTransitionDelay = delayInSeconds + "s";
+    element.style.oTransitionDelay = delayInSeconds + "s";
+    element.style.transitionDelay = delayInSeconds + "s";
 }
 
 function isCellHighlighted(row, col) {
@@ -196,11 +227,54 @@ function findMaxWayDownRight(startRow, startCol) {
 function move(element, oldRow, newRow, oldCol, newCol, targetCell) {
     element.dataset.row = newRow;
     element.dataset.col = newCol;
+
+    var targetImages = targetCell.getElementsByTagName("img");
+    if (targetImages.length == 1) {
+        var capturedPiece = targetImages[0];
+        capturePiece(capturedPiece);
+    }
+
     targetCell.innerHTML = "";
     targetCell.appendChild(element);
 
     var sourceCell = document.getElementById("cell_" + oldRow + oldCol);
     sourceCell.innerHTML = "";
+}
+
+function capturePiece(capturedPiece) {
+    var figureColor = capturedPiece.dataset.figureColor;
+    var container = document.getElementById("captured_" + figureColor);
+    var angle = figureColor == FigureColor.white ? 0 : 180;
+
+    // Lazy load pattern
+    if (container.getElementsByTagName("table").length == 0) {
+        var table = document.createElement("table");
+        table.insertRow(0);
+        container.appendChild(table);
+    }
+
+    var existingTable = container.getElementsByTagName("table")[0];
+    var rows = existingTable.rows;
+    var cells = rows[rows.length - 1].cells;
+    if (cells.length == 8) {
+        // Moving the current table to new td
+        var newTable = document.createElement("table");
+        newTable.insertRow(0);
+        newTable.rows[0].insertCell(0);
+        newTable.rows[0].cells[0].innerHTML = existingTable.outerHTML;
+        var newTd = document.createElement("td");
+        newTd.appendChild(newTable);
+        existingTable.deleteRow(0);
+        existingTable.insertRow(0);
+        var position = figureColor == FigureColor.white ? "beforeBegin" : "afterEnd";
+        container.insertAdjacentElement(position, newTd);
+    }
+
+    // Inserting the captured piece into its capture container
+    capturedPiece.className = "captured";
+    var newCell = rows[0].insertCell(0);
+    newCell.style.display = "block";
+    newCell.appendChild(capturedPiece);
 }
 
 function isPossibleMove(oldRow, newRow, oldCol, newCol, fType, fColor) {
@@ -356,18 +430,18 @@ function isLegalOrthogonalMove(newRow, newCol, deltaRow, deltaCol, topBorder, bo
     }
 }
 
-function toggleChessBoardVisibility() {
-    if (!toggleButton.checked) {
-        board.style.visibility = "hidden";
+function toggleAutoRotation() {
+    if (isRotated) {
+        rotateTheBoard();
     }
-    else {
-        board.style.visibility = "visible";
-    }
+
+    isRotationEnabled = !isRotationEnabled;
 }
 
 function onCellClick(cell) {
-    if (getTypeOf(cell) != "HTMLTableCellElement") {
-        throw "Exception: clicked on a non table cell";
+    var type = getTypeOf(cell);
+    if (type != "HTMLTableCellElement" && type != "HTMLTableDataCellElement") {
+        throw "You have clicked on a non table cell: " + type;
         return;
     }
 
@@ -665,16 +739,21 @@ function resetCells() {
             subImages[0].style.width = (cellSize - 5) + "px";
         }
     }
-    
-    board.style.width = ((cellSize + 4) * 8) + 'px';
-    board.style.textAlign = "center";
-    board.style.verticalAlign = "center";
 
-    // Ensure board visibility
-    if (!toggleButton.checked) {
-        toggleButton.checked = true;
-        toggleChessBoardVisibility();
-    }
+    var realSize = cellSize + 6.5;
+    board.style.width = (realSize * 8) + "px";
+    board.style.height = board.style.width;
+    document.getElementById("captured_black").style.width = ((realSize * 2) - 50) + "px";
+    document.getElementById("captured_white").style.width = ((realSize * 2) - 50) + "px";
+    mainTable.style.width = (realSize * 12) + "px";
+    mainTable.style.height = (realSize * 12) + "px";
+    mainTable.style.visibility = "visible";
+
+    //Resizing the captured images too
+    var capturedImages = document.getElementsByClassName("captured");
+    Array.prototype.forEach.call(capturedImages, function (captured) {
+        captured.style.width = (cellSize - 5) + "px";
+    });
 
     selectedImage = null;
 }

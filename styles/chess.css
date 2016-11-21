@@ -1,5 +1,9 @@
 body {
     background-color: #c89d59;
+    -webkit-user-select: none;
+    -moz-user-select: -moz-none;
+    -ms-user-select: none;
+    user-select: none;
 }
 
 div#menu {
@@ -16,8 +20,11 @@ div#menu {
 div#chess_board {
     margin-left: auto;
     margin-right: auto;
-    border: 10px ridge gray;
-    visibility: hidden;
+    border: 10px double gray;
+}
+
+div#chess_board td {
+    border: 0.5px solid black;
 }
 
 input#input_cell_width {
@@ -25,6 +32,11 @@ input#input_cell_width {
     color: inherit;
 }
 
-div#chess_board {
-
+table#main_table {
+    margin: auto;
+    text-align: center;
+    vertical-align: central;
+    border: 10px ridge gray;
+    background-image: url("/../images/marble.jpg");
+    visibility: hidden;
 }

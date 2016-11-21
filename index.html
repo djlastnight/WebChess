@@ -9,9 +9,16 @@
     <div id="menu">
         Choose board cell size:
         <input type="number" min="10" max="200" value="56" id="input_cell_width" onchange="resetCells();" />
-        <input type="checkbox" onchange="toggleChessBoardVisibility();" id="input_toggle"> Show Chess Board
+        <input type="checkbox" onchange="toggleAutoRotation();" id="input_toggle" checked="checked">
+        <label for="input_toggle">Enable Auto Rotation</label>
     </div>
-    <div id="chess_board"></div>
+    <table id="main_table">
+        <tr>
+            <td id="captured_black"></td>
+            <td><div id="chess_board"></div></td>
+            <td id="captured_white"></td>
+        </tr>
+    </table>
     <script src="scripts/chess.js"></script>
 </body>
 </html>
