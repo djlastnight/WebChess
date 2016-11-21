@@ -14,6 +14,7 @@ selectedImage = null;
 isWhiteAtBottom = null;
 currentPlayerColor = null;
 chooseWhiteRadioButton = null;
+isRotated = false;
 
 // Player Color Enumeration
 PlayerColor = {
@@ -67,6 +68,32 @@ var getTypeOf = function (obj) {
 function toggleCurrentPlayerColor() {
     var isCurrentBlack = currentPlayerColor == PlayerColor.black;
     currentPlayerColor = isCurrentBlack ? PlayerColor.white : PlayerColor.black;
+
+    // Rotating the board
+    var angleZ = isRotated ? 0 : 180;
+    rotateZ(board, angleZ);
+    for (var i = 0; i < 8; i++) {
+        for (var j = 0; j < 8; j++) {
+            var cell = document.getElementById("cell_" + i + j);
+            rotateZ(cell, angleZ);
+        }
+    }
+
+    isRotated = !isRotated;
+}
+
+function rotateZ(element, angle) {
+    element.style.webkitTransform = 'rotateZ(' + angle + 'deg)';
+    element.style.mozTransform = 'rotateZ(' + angle + 'deg)';
+    element.style.msTransform = 'rotateZ(' + angle + 'deg)';
+    element.style.oTransform = 'rotateZ(' + angle + 'deg)';
+    element.style.transform = 'rotateZ(' + angle + 'deg)';
+
+    element.style.webkitTransition = " transform 2.0s ease-in-out";
+    element.style.mozTransition = " transform 2.0s ease-in-out";
+    element.style.msTransition = " transform 2.0s ease-in-out";
+    element.style.oTransition = " transform 2.0s ease-in-out";
+    element.style.transition = " transform 2.0s ease-in-out";
 }
 
 function isCellHighlighted(row, col) {
