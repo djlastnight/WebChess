@@ -9,9 +9,9 @@ board = document.getElementById("chess_board");
 intervalInMilliseconds = 1000;
 clockContainer = document.getElementById("clockContainer");
 date = new Date();
-selectImageSource = "images/underlay_yellow.png";
-highlightImageSource = "images/underlay_blue.png";
-captionImageSource = "images/underlay_red.png";
+selectImageSource = "Images/Underlay_Yellow.png";
+highlightImageSource = "Images/Underlay_Blue.png";
+captionImageSource = "Images/Underlay_Red.png";
 selectedImage = null;
 isWhiteAtBottom = null;
 currentPlayerColor = null;
@@ -72,7 +72,7 @@ function toggleCurrentPlayerColor() {
 function isHighlightedCell(row, col) {
     var target = document.getElementById("cell_" + row + col);
     // If have marbe in the bg name, which means the cell is highlighted
-    return target.style.background.indexOf("marble") == -1;
+    return target.style.background.indexOf("Marble") == -1;
 }
 
 function getFigureColor(row, col) {
@@ -603,7 +603,7 @@ function addDefaultFigures() {
                 continue;
             }
 
-            var imageSource = "images/" + figure.figureType + "_" + figure.figureColor + ".png";
+            var imageSource = "Images/" + figure.figureType + "_" + figure.figureColor + ".png";
             var figureImage = document.createElement("img");
             figureImage.src = imageSource;
             figureImage.width = numberSelector.value - 5;
@@ -622,8 +622,8 @@ function addDefaultFigures() {
 
 function resetCells() {
     var cellSize = Number(numberSelector.value);
-    var blackCellBg = "transparent url(images/marble_black.jpg) no-repeat center center";
-    var whiteCellBg = "transparent url(images/marble_white.jpg) no-repeat center center";
+    var blackCellBg = "transparent url(Images/Marble_Black.jpg) no-repeat center center";
+    var whiteCellBg = "transparent url(Images/Marble_White.jpg) no-repeat center center";
     for (var i = 0; i < 8; i++) {
         for (var j = 0; j < 8; j++) {
             var cell = document.getElementById("cell_" + i + j);
