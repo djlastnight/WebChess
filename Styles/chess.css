@@ -24,10 +24,3 @@ input#input_cell_width {
     background-color: inherit;
     color: inherit;
 }
-
-table#chess_table {
-    -webkit-transition: all 0.5s ease-in-out;
-    -moz-transition: all 0.5s ease-in-out;
-    -o-transition: all 0.5s ease-in-out;
-    transition: all 0.5s ease-in-out;
-}
