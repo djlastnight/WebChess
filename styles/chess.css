@@ -3,7 +3,7 @@ body {
     -webkit-user-select: none;
     -moz-user-select: -moz-none;
     -ms-user-select: none;
-    user-select: none;
+    user-select: text;
 }
 
 div#menu {
@@ -35,7 +35,7 @@ input#input_cell_width {
 table#main_table {
     margin: auto;
     text-align: center;
-    vertical-align: central;
+    vertical-align: middle;
     border: 10px ridge gray;
     background-image: url("/../images/marble.jpg");
     visibility: hidden;

@@ -760,6 +760,47 @@ function resetCells() {
 
 showColorChooserForm();
 
+//function findKingLocation(kingColor) {
+//    if (kingColor != FigureColor.black &&
+//        kingColor != FigureColor.white) {
+//        throw "Error: findKingLocation() expected FigureColor.white or FigureColor.black!";
+//        return;
+//    }
+
+//    for (var i = 0; i < 8; i++) {
+//        for (var j = 0; j < 8; j++) {
+//            var color = getFigureColor(i, j);
+//            if (color == kingColor) {
+//                var cell = document.getElementById("cell_" + i + j);
+//                var piece = cell.getElementsByTagName("img")[0];
+//                var type = piece.dataset.figureType;
+//                if (type == FigureType.king) {
+//                    return new Array(i, j);
+//                }
+//            }
+//        }
+//    }
+
+//    throw "Fatal chess error: can not find the " + kingColor.toUpperCase() + " King!";
+//}
+
+//function createVirtualBoard() {
+//    var realBoard = document.getElementById("chess_table");
+//    var virtualBoard = document.createElement("table");
+//    virtualBoard.outerHTML = realBoard.outerHTML;
+//    virtualBoard.dataset.originalOuterHTML = realBoard.outerHTML;
+//    realBoard.innerHTML = "";
+//    realBoard.id = "original";
+//    document.appendChild(virtualBoard);
+//    return virtualBoard;
+//}
+
+//function destroyVirtualBoard(virtualBoard) {
+//    var realBoard = document.getElementById("original");
+//    realBoard.outerHTML = virtualBoard.dataset.originalOuterHTML;
+//    document.removeChild(virtualBoard);
+//}
+
 //function changeBgColor() {
 //    var red = Math.random() * 255;
 //    var green = Math.random() * 255;
