@@ -18,6 +18,8 @@ chooseWhiteRadioButton = null;
 isRotated = false;
 isRotationEnabled = true;
 isAtVirtualMode = false;
+isGameOver = false;
+gameOverReason = "";
 
 // Player Color Enumeration
 PlayerColor = {
@@ -231,7 +233,7 @@ function findMaxWayDownRight(chessBoard, startRow, startCol) {
 function move(element, oldRow, newRow, oldCol, newCol, targetCell) {
     var chessBoard = document.getElementById("chess_table");
 
-    // Removing the king check if have previously added
+    // Removing the king check marks if we have previously added
     var blackKingLoc = findKingLocation(chessBoard, FigureColor.black);
     var whiteKingLoc = findKingLocation(chessBoard, FigureColor.white);
     var blackKingCell = document.getElementById("cell_" + blackKingLoc[0] + blackKingLoc[1]);
@@ -241,33 +243,45 @@ function move(element, oldRow, newRow, oldCol, newCol, targetCell) {
     blackKingImage.style.border = "";
     whiteKingImage.style.border = "";
 
-    // Looking for opponent king check before the move
+    // Marking opponent's king if it will be in check after the current move
     var nextPlayerColor = getNextPlayerColor();
     var kingColor = nextPlayerColor == PlayerColor.black ? FigureColor.black : FigureColor.white;
-    var isKingChecked = willBeKingChecked(kingColor, oldRow, newRow, oldCol, newCol);
-    if (isKingChecked) {
+    var isKingInCheck = willBeKingInCheck(chessBoard, kingColor, oldRow, newRow, oldCol, newCol);
+    if (isKingInCheck) {
         var kingLoc = findKingLocation(chessBoard, kingColor);
         var kingCell = document.getElementById("cell_" + kingLoc[0] + kingLoc[1]);
         var kingImg = kingCell.getElementsByTagName("img")[0];
         kingImg.style.border = "5px solid red";
     }
 
-    // TODO: Calculate the total possible moves count
-    var possibleMovesCount = -1;
+    var virtualBoard = virtualMove(chessBoard, oldRow, newRow, oldCol, newCol);
+    var opponentHasMoves = false;
+    var opponentPieces = getOpponentPieces(virtualBoard, currentPlayerColor);
+    for (var i in opponentPieces) {
+        var opponentPiece = opponentPieces[i];
+        var highlightsCount = highlightPossibleMoves(virtualBoard, opponentPiece.figureLocation.row, opponentPiece.figureLocation.col);
+        if (highlightsCount > 0) {
+            opponentHasMoves = true;
+            break;
+        }
+    }
 
-    if (possibleMovesCount == 0) {
+    if (!opponentHasMoves) {
         // Game over
-        if (isKingChecked) {
-            // We have chessmate
-            var winnerColor = currentPlayerColor == PlayerColor.black ? PlayerColor.white : PlayerColor.black;
-            alert("Game over! " + winnerColor.toUpperCase() + " wins the game!");
+        if (isKingInCheck) {
+            gameOverReason = currentPlayerColor + " player wins the game by chessmate!";
         }
         else {
-            // We have chessmate
-            alert("Game over! Game counted as draw, due to stalemate!");
+            gameOverReason = "Game counted as draw, due to stalemate!";
         }
 
-        return;
+        var lastCell = document.getElementById("cell_" + newRow + newCol);
+        lastCell.style.background = "transparent url('" + captionImageSource + "') no-repeat center";
+        lastCell.style.backgroundSize = numberSelector.value + "px " + numberSelector.value + "px";
+        numberSelector.disabled = "disabled";
+        document.getElementById("input_toggle").disabled = "disabled";
+        alert("Game over! " + gameOverReason);
+        return false;
     }
 
     element.dataset.row = newRow;
@@ -284,6 +298,8 @@ function move(element, oldRow, newRow, oldCol, newCol, targetCell) {
 
     var sourceCell = document.getElementById("cell_" + oldRow + oldCol);
     sourceCell.innerHTML = "";
+
+    return true;
 }
 
 function capturePiece(capturedPiece) {
@@ -476,6 +492,10 @@ function isLegalOrthogonalMove(newRow, newCol, deltaRow, deltaCol, topBorder, bo
 }
 
 function toggleAutoRotation() {
+    if (isGameOver) {
+        return;
+    }
+
     if (isRotated) {
         rotateTheBoard();
     }
@@ -491,6 +511,10 @@ function onCellClick(cell) {
     }
 
     hideTooltip();
+    if (isGameOver) {
+        showTooltip(cell, "Game is over!", gameOverReason);
+        return;
+    }
 
     var chessBoard = document.getElementById("chess_table");
     var newRow = cell.dataset.row;
@@ -517,7 +541,12 @@ function onCellClick(cell) {
         var fColor = selectedImage.dataset.figureColor;
 
         if (isHighlighted) {
-            move(selectedImage, oldRow, newRow, oldCol, newCol, cell);
+            var isMoved = move(selectedImage, oldRow, newRow, oldCol, newCol, cell);
+            if (!isMoved) {
+                isGameOver = true;
+                return;
+            }
+
             toggleCurrentPlayerColor();
         }
 
@@ -538,7 +567,7 @@ function onCellClick(cell) {
     cell.style.backgroundSize = numberSelector.value + "px " + numberSelector.value + "px";
     selectedImage = img;
 
-    highlightPossibleMoves(img);
+    highlightPossibleMoves(chessBoard, img.dataset.row, img.dataset.col);
 }
 
 function showTooltip(cell, messageLine1, messageLine2) {
@@ -635,41 +664,40 @@ function showColorChooserForm() {
     document.body.appendChild(form);
 }
 
-function highlightPossibleMoves(img) {
+// Returns highlighted cells count
+function highlightPossibleMoves(chessBoard, row, col) {
+    var img = chessBoard.rows[row].cells[col].getElementsByTagName("img")[0];
     if (img == undefined) {
-        throw "Cannot highlight possible moves, because passed img is undefined";
-        return;
+        return 0;
     }
 
-    var row = Number(img.dataset.row);
-    var col = Number(img.dataset.col);
     var fType = img.dataset.figureType;
     var fColor = img.dataset.figureColor;
-
-    var table = document.getElementById("chess_table");
-    var possibleMovesCount = 0;
+    var highlights = 0;
 
     for (var i = 0; i < 8; i++) {
         for (var j = 0; j < 8; j++) {
-            if (isPossibleMove(table, row, i, col, j, fType, fColor)) {
+            if (isPossibleMove(chessBoard, row, i, col, j, fType, fColor)) {
 
-                if (willBeKingChecked(fColor, row, i, col, j)) {
+                if (willBeKingInCheck(chessBoard, fColor, row, i, col, j)) {
                     continue;
                 }
 
-                possibleMovesCount++;
                 // Highlighting the possible moves
-                table.rows[i].cells[j].style.background = "transparent url('" + highlightImageSource + "') no-repeat center";
-                table.rows[i].cells[j].style.backgroundSize = numberSelector.value + "px " + numberSelector.value + "px";
-                var targetColor = getFigureColor(table, i, j);
+                highlights++;
+                chessBoard.rows[i].cells[j].style.background = "transparent url('" + highlightImageSource + "') no-repeat center";
+                chessBoard.rows[i].cells[j].style.backgroundSize = numberSelector.value + "px " + numberSelector.value + "px";
+                var targetColor = getFigureColor(chessBoard, i, j);
                 if (targetColor != null && targetColor != fColor) {
                     // Highligthing the figure, which we can capture
-                    table.rows[i].cells[j].style.background = "transparent url('" + captionImageSource + "') no-repeat center";
-                    table.rows[i].cells[j].style.backgroundSize = numberSelector.value + "px " + numberSelector.value + "px";
+                    chessBoard.rows[i].cells[j].style.background = "transparent url('" + captionImageSource + "') no-repeat center";
+                    chessBoard.rows[i].cells[j].style.backgroundSize = numberSelector.value + "px " + numberSelector.value + "px";
                 }
             }
         }
     }
+
+    return highlights;
 }
 
 function createFigure(row, col) {
@@ -843,26 +871,19 @@ function findKingLocation(chessBoard, kingColor) {
     throw "Fatal chess error: can not find the " + kingColor.toUpperCase() + " King!";
 }
 
-function willBeKingChecked(kingColor, oldRow, newRow, oldCol, newCol) {
+function willBeKingInCheck(chessBoard, kingColor, oldRow, newRow, oldCol, newCol) {
     if (kingColor != FigureColor.black &&
         kingColor != FigureColor.white) {
-        throw "Error: willBeKingChecked() expected FigureColor.white or FigureColor.black!";
+        throw "Error: willBeKingInCheck() expected FigureColor.white or FigureColor.black!";
         return;
     }
 
-    var virtualBoard = document.getElementById("chess_table").cloneNode(true);
+    var virtualBoard = virtualMove(chessBoard, oldRow, newRow, oldCol, newCol);
 
-    // Moving the piece at the virtual board
-    var sourceCell = virtualBoard.rows[oldRow].cells[oldCol];
-    var targetCell = virtualBoard.rows[newRow].cells[newCol];
-    var elementToMove = sourceCell.getElementsByTagName("img")[0];
-    var elementToCapture;
-    if (targetCell.getElementsByClassName("img").length == 1) {
-        elementToCapture = targetCell.getElementsByClassName("img")[0];
-    }
-
-    elementToMove.dataset.row = newRow;
-    elementToMove.dataset.col = newCol;
+    //var elementToCapture;
+    //if (targetCell.getElementsByClassName("img").length == 1) {
+    //    elementToCapture = targetCell.getElementsByClassName("img")[0];
+    //}
 
     //var targetImages = targetCell.getElementsByTagName("img");
     //if (targetImages.length == 1) {
@@ -870,16 +891,34 @@ function willBeKingChecked(kingColor, oldRow, newRow, oldCol, newCol) {
     //    var capturedPiece = targetImages[0];
     //}
 
-    sourceCell.innerHTML = "";
-    targetCell.innerHTML = "";
-    targetCell.appendChild(elementToMove);
     //End of moving
 
     var kingLocation = findKingLocation(virtualBoard, kingColor);
-    var oponentPieces = [];
+    return isCellUnderAttack(virtualBoard, kingLocation[0], kingLocation[1], kingColor);
+}
+
+// Returns chess board clonning, where specified element is moved
+function virtualMove(boardToClone, oldRow, newRow, oldCol, newCol) {
+    var virtualBoard = boardToClone.cloneNode(true);
+
+    var sourceCell = virtualBoard.rows[oldRow].cells[oldCol];
+    var targetCell = virtualBoard.rows[newRow].cells[newCol];
+    var elementToMove = sourceCell.getElementsByTagName("img")[0];
+    elementToMove.dataset.row = newRow;
+    elementToMove.dataset.col = newCol;
+    sourceCell.innerHTML = "";
+    targetCell.innerHTML = "";
+    targetCell.appendChild(elementToMove);
+
+    return virtualBoard;
+}
+
+// Returns Figure Array
+function getOpponentPieces(chessBoard, playerColor) {
+    var opponentPieces = [];
     for (var i = 0; i < 8; i++) {
         for (var j = 0; j < 8; j++) {
-            var cell = virtualBoard.rows[i].cells[j];
+            var cell = chessBoard.rows[i].cells[j];
             var subImages = cell.getElementsByTagName("img");
             if (subImages.length == 0) {
                 continue;
@@ -888,63 +927,32 @@ function willBeKingChecked(kingColor, oldRow, newRow, oldCol, newCol) {
             var img = subImages[0];
             var fType = img.dataset.figureType;
             var fColor = img.dataset.figureColor;
-            if (fColor != kingColor) {
-                oponentPieces.push(new Figure(fType, fColor, i, j));
+            if (fColor != playerColor) {
+                opponentPieces.push(new Figure(fType, fColor, i, j));
             }
         }
     }
 
-    var isKingChecked = false;
-    Array.prototype.forEach.call(oponentPieces, function (oponentPiece) {
-        if (isPossibleMove(virtualBoard, oponentPiece.figureLocation.row, kingLocation[0], oponentPiece.figureLocation.col, kingLocation[1], oponentPiece.figureType, oponentPiece.figureColor)) {
-            isKingChecked = true;
-        }
-    });
-
-    return isKingChecked;
+    return opponentPieces;
 }
 
-//function changeBgColor() {
-//    var red = Math.random() * 255;
-//    var green = Math.random() * 255;
-//    var blue = Math.random() * 255;
-//    var hexColor = "#" + byteToHex(red) + byteToHex(green) + byteToHex(blue);
+function isCellUnderAttack(chessBoard, row, col, playerColor) {
+    var opponentPieces = getOpponentPieces(chessBoard, playerColor);
 
-//    if (hexColor.length != 7) {
-//        throw "Invalid hex color: " + hexColor;
-//        return;
-//    }
+    for (var i in opponentPieces) {
+        var opponentPiece = opponentPieces[i];
+        var oldRow = opponentPiece.figureLocation.row;
+        var oldCol = opponentPiece.figureLocation.col;
+        var fType = opponentPiece.figureType;
+        var fColor = opponentPiece.figureColor;
+        if (isPossibleMove(chessBoard, oldRow, row, oldCol, col, fType, fColor)) {
+            return true;
+        }
+    }
 
-//    document.body.style.backgroundColor = hexColor;
-//    document.body.style.color = (red + green + blue) < 300 ? "White" : "Black";
-//}
+    return false;
+}
 
-//function byteToHex(byte) {
-//    byte = Math.abs(Math.floor(byte) % 255);
-//    var hex = byte.toString(16);
-//    if (hex.length == 1) {
-//        hex = "0" + hex;
-//    }
-
-//    return hex;
-//}
-
-//function createTimer() {
-//    timer = window.setInterval(timerTick, intervalInMilliseconds);
-//}
-
-//function timerTick() {
-//    date.setMilliseconds(date.getMilliseconds() + intervalInMilliseconds);
-//    var hours = date.getHours();
-//    var minutes = date.getMinutes();
-//    var seconds = date.getSeconds();
-
-//    hours = hours < 10 ? "0" + hours : hours;
-//    minutes = minutes < 10 ? "0" + minutes : minutes;
-//    seconds = seconds < 10 ? "0" + seconds : seconds;
-
-//    clockContainer.innerHTML = "Time now is " + hours + ":" + minutes + ":" + seconds;
-//    if (seconds % 30 == 0) {
-//        changeBgColor();
-//    }
-//}
+// TODO: Implement Promotion (Queen) and Underpromotion (Any piece other than Queen or Pawn)
+// TODO: Implement Castling (Rook and King should not be moved at all; King should not pass cell under attack; Denied when king is in check, or would be in check after the castling)
+// TODO: Implement En Passant (possible only for a next opponent move)
