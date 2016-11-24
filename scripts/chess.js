@@ -8,9 +8,10 @@ mainTable = document.getElementById("main_table");
 board = document.getElementById("chess_board");
 date = new Date();
 backgroundImageSourcePrefix = "marble_"; // example: marble_white.jpg, marble_black.jpg
-selectImageSource = "images/underlay_yellow.png";
-highlightImageSource = "images/underlay_blue.png";
-captionImageSource = "images/underlay_red.png";
+selectImageSource = "images/underlay_selected.png";
+highlightImageSource = "images/underlay_highlight.png";
+captionImageSource = "images/underlay_capture.png";
+castlingImageSource = "images/underlay_castling.png";
 selectedImage = null;
 isWhiteAtBottom = null;
 currentPlayerColor = null;
@@ -244,6 +245,11 @@ function findMaxWayDownRight(chessBoard, startRow, startCol) {
 function move(element, oldRow, newRow, oldCol, newCol, targetCell) {
     var chessBoard = document.getElementById("chess_table");
 
+    oldRow = Number(oldRow);
+    newRow = Number(newRow);
+    oldCol = Number(oldCol);
+    newCol = Number(newCol);
+
     // Removing the king check marks if we have previously added
     var blackKingLoc = findKingLocation(chessBoard, FigureColor.black);
     var whiteKingLoc = findKingLocation(chessBoard, FigureColor.white);
@@ -308,13 +314,33 @@ function move(element, oldRow, newRow, oldCol, newCol, targetCell) {
         capturePiece(capturedPiece);
     }
 
+    if (targetCell.style.backgroundImage.indexOf(castlingImageSource) != -1) {
+        // King makes a castling - Moving the rook now
+        var rookOldCol = newCol > 4 ? 7 : 0;
+        var rookNewCol = rookOldCol == 0 ? newCol + 1 : newCol - 1;
+        var rookSourceImg = getFigureImage(chessBoard, newRow, rookOldCol);
+        var rookTargetCell = document.getElementById("cell_" + newRow + rookNewCol);
+        move(rookSourceImg, oldRow, newRow, rookOldCol, rookNewCol, rookTargetCell);
+    }
+
     targetCell.innerHTML = "";
     targetCell.appendChild(element);
 
     var sourceCell = document.getElementById("cell_" + oldRow + oldCol);
     sourceCell.innerHTML = "";
 
+    if (element.dataset.figureType == FigureType.pawn) {
+        if (newRow % 7 == 0) {
+            promotePiece(chessBoard, newRow, newCol);
+        }
+    }
+
     return true;
+}
+
+function promotePiece(chessBoard, row, col) {
+    var figure = new Figure(FigureType.queen, currentPlayerColor, row, col);
+    addPiece(chessBoard, figure, row, col)
 }
 
 function capturePiece(capturedPiece) {
@@ -417,6 +443,9 @@ function isPossibleMove(chessBoard, oldRow, newRow, oldCol, newCol, fType, fColo
                 } else {
                     nextRow = isBlack ? oldRow + 1 : oldRow - 1;
                 }
+
+                nextRow = nextRow < 0 ? 0 : nextRow;
+                nextRow = nextRow > 7 ? 7 : nextRow;
 
                 var doubleMoveRow;
                 if (!isWhiteAtBottom) {
@@ -706,7 +735,7 @@ function highlightPossibleMoves(chessBoard, row, col) {
         for (var j = 0; j < 8; j++) {
             if (fType == FigureType.king && isLegalCastlingMove(chessBoard, fColor, i, j)) {
                 // Highlighting castling move
-                chessBoard.rows[i].cells[j].style.background = "transparent url('" + captionImageSource + "') no-repeat center";
+                chessBoard.rows[i].cells[j].style.background = "transparent url('" + castlingImageSource + "') no-repeat center";
                 chessBoard.rows[i].cells[j].style.backgroundSize = numberSelector.value + "px " + numberSelector.value + "px";
             }
 
@@ -808,7 +837,7 @@ function drawChessBoard() {
 }
 
 function addDefaultFigures() {
-    var table = document.getElementById("chess_table");
+    var chessBoard = document.getElementById("chess_table");
     for (var i = 0; i < 8; i++) {
         for (var j = 0; j < 8; j++) {
             var figure = createFigure(i, j);
@@ -816,22 +845,26 @@ function addDefaultFigures() {
                 continue;
             }
 
-            var imageSource = "images/" + figure.figureType + "_" + figure.figureColor + ".png";
-            var figureImage = document.createElement("img");
-            figureImage.src = imageSource;
-            figureImage.width = numberSelector.value - 5;
-            figureImage.alt = "chess_figure";
-            figureImage.id = "img_" + i + j;
-            figureImage.dataset.figureType = figure.figureType;
-            figureImage.dataset.figureColor = figure.figureColor;
-            figureImage.dataset.row = i;
-            figureImage.dataset.col = j;
-            figureImage.dataset.isMoved = false;
-            figureImage.onmousedown = "event.preventDefault ? event.preventDefault() : event.returnValue = false";
-
-            table.rows[i].cells[j].innerHTML = figureImage.outerHTML;
+            addPiece(chessBoard, figure, i, j);
         }
     }
+}
+
+function addPiece(chessBoard, figure, row, col) {
+    var imageSource = "images/" + figure.figureType + "_" + figure.figureColor + ".png";
+    var figureImage = document.createElement("img");
+    figureImage.src = imageSource;
+    figureImage.width = numberSelector.value - 5;
+    figureImage.alt = "chess_figure";
+    figureImage.id = "img_" + row + col;
+    figureImage.dataset.figureType = figure.figureType;
+    figureImage.dataset.figureColor = figure.figureColor;
+    figureImage.dataset.row = row;
+    figureImage.dataset.col = col;
+    figureImage.dataset.isMoved = false;
+    figureImage.onmousedown = "event.preventDefault ? event.preventDefault() : event.returnValue = false";
+
+    chessBoard.rows[row].cells[col].innerHTML = figureImage.outerHTML;
 }
 
 function resetCells() {
@@ -1085,6 +1118,4 @@ function isCellUnderAttack(chessBoard, row, col, playerColor) {
 }
 
 // TODO: Implement Promotion (Queen) and Underpromotion (Any piece other than Queen or Pawn)
-// TODO: Implement Castling (Rook and King should not be moved at all; King should not pass cell under attack; Denied when king is in check, or would be in check after the castling)
 // TODO: Implement En Passant (possible only for a next opponent move)
-// TODO: Fix double pawn move
