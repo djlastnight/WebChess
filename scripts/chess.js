@@ -12,6 +12,7 @@ selectImageSource = "images/underlay_selected.png";
 highlightImageSource = "images/underlay_highlight.png";
 captionImageSource = "images/underlay_capture.png";
 castlingImageSource = "images/underlay_castling.png";
+checkImageSource = "images/underlay_check.png";
 selectedImage = null;
 isWhiteAtBottom = null;
 currentPlayerColor = null;
@@ -21,6 +22,13 @@ isRotationEnabled = true;
 isGameOver = false;
 gameOverReason = "";
 kingInCheckColor = null;
+promotionPieceType = null;
+
+
+// String extension method
+String.prototype.capitalizeFirstLetter = function () {
+    return this.charAt(0).toUpperCase() + this.slice(1);
+}
 
 // Player Color Enumeration
 PlayerColor = {
@@ -249,6 +257,7 @@ function move(element, oldRow, newRow, oldCol, newCol, targetCell) {
     newRow = Number(newRow);
     oldCol = Number(oldCol);
     newCol = Number(newCol);
+    var sourceCell = document.getElementById("cell_" + oldRow + oldCol);
 
     // Removing the king check marks if we have previously added
     var blackKingLoc = findKingLocation(chessBoard, FigureColor.black);
@@ -266,9 +275,8 @@ function move(element, oldRow, newRow, oldCol, newCol, targetCell) {
     var isKingInCheck = willBeKingInCheck(chessBoard, kingColor, oldRow, newRow, oldCol, newCol);
     if (isKingInCheck) {
         var kingLoc = findKingLocation(chessBoard, kingColor);
-        var kingCell = document.getElementById("cell_" + kingLoc[0] + kingLoc[1]);
-        var kingImg = kingCell.getElementsByTagName("img")[0];
-        kingImg.style.border = "5px solid red";
+        var kingImg = getFigureImage(chessBoard, kingLoc[0], kingLoc[1]);
+        kingImg.style.border = "3px solid red";
         kingInCheckColor = kingColor;
     } else {
         kingInCheckColor = null;
@@ -289,15 +297,17 @@ function move(element, oldRow, newRow, oldCol, newCol, targetCell) {
     if (!opponentHasMoves) {
         // Game over
         if (isKingInCheck) {
-            gameOverReason = currentPlayerColor + " player wins the game by checkmate!";
+            gameOverReason = currentPlayerColor.capitalizeFirstLetter() + " player wins the game by checkmate!";
         }
         else {
             gameOverReason = "Game counted as draw, due to stalemate!";
         }
 
-        var lastCell = document.getElementById("cell_" + newRow + newCol);
-        lastCell.style.background = "transparent url('" + captionImageSource + "') no-repeat center";
-        lastCell.style.backgroundSize = numberSelector.value + "px " + numberSelector.value + "px";
+        targetCell.style.background = "transparent url('" + checkImageSource + "') no-repeat center";
+        targetCell.style.backgroundSize = numberSelector.value + "px " + numberSelector.value + "px";
+        targetCell.innerHTML = "";
+        targetCell.appendChild(element);
+        sourceCell.innerHTML = "";
         numberSelector.disabled = "disabled";
         document.getElementById("input_toggle").disabled = "disabled";
         alert("Game over! " + gameOverReason);
@@ -325,22 +335,15 @@ function move(element, oldRow, newRow, oldCol, newCol, targetCell) {
 
     targetCell.innerHTML = "";
     targetCell.appendChild(element);
-
-    var sourceCell = document.getElementById("cell_" + oldRow + oldCol);
     sourceCell.innerHTML = "";
 
     if (element.dataset.figureType == FigureType.pawn) {
         if (newRow % 7 == 0) {
-            promotePiece(chessBoard, newRow, newCol);
+            showPromotionDialog(chessBoard, newRow, newCol);
         }
     }
 
     return true;
-}
-
-function promotePiece(chessBoard, row, col) {
-    var figure = new Figure(FigureType.queen, currentPlayerColor, row, col);
-    addPiece(chessBoard, figure, row, col)
 }
 
 function capturePiece(capturedPiece) {
@@ -474,7 +477,7 @@ function isPossibleMove(chessBoard, oldRow, newRow, oldCol, newCol, fType, fColo
         case FigureType.knight:
             {
                 if (absDeltaRow == 2 && absDeltaCol == 1 ||
-            		absDeltaRow == 1 && absDeltaCol == 2) {
+                    absDeltaRow == 1 && absDeltaCol == 2) {
                     return true;
                 }
             }
@@ -845,18 +848,20 @@ function addDefaultFigures() {
                 continue;
             }
 
-            addPiece(chessBoard, figure, i, j);
+            addPiece(chessBoard, figure, false);
         }
     }
 }
 
-function addPiece(chessBoard, figure, row, col) {
+function addPiece(chessBoard, figure, isPromotion) {
     var imageSource = "images/" + figure.figureType + "_" + figure.figureColor + ".png";
+    var row = figure.figureLocation.row;
+    var col = figure.figureLocation.col;
     var figureImage = document.createElement("img");
     figureImage.src = imageSource;
     figureImage.width = numberSelector.value - 5;
     figureImage.alt = "chess_figure";
-    figureImage.id = "img_" + row + col;
+    figureImage.id = !isPromotion ? "img_" + row + col : "promotion_img_" + row + col;
     figureImage.dataset.figureType = figure.figureType;
     figureImage.dataset.figureColor = figure.figureColor;
     figureImage.dataset.row = row;
@@ -1117,5 +1122,70 @@ function isCellUnderAttack(chessBoard, row, col, playerColor) {
     return false;
 }
 
-// TODO: Implement Promotion (Queen) and Underpromotion (Any piece other than Queen or Pawn)
-// TODO: Implement En Passant (possible only for a next opponent move)
+function showPromotionDialog(chessBoard, newRow, newCol) {
+    var content = "Please choose promotion piece:";
+    var form = document.createElement("form");
+    form.style.textAlign = "center";
+    form.style.margin = "auto";
+    form.name = "promotionForm";
+    form.id = "form_promotion";
+    form.style.height = "100px";
+    form.style.border = "3px ridge black";
+    form.style.borderRadius = "10px";
+    form.innerHTML = content + "<br/>";
+    var div = document.createElement("div");
+    div.style.textAlign = "left";
+    div.style.margin = "auto";
+    div.style.width = "100px";
+    var button = document.createElement("input");
+    button.type = "button";
+    button.value = "Ok";
+    button.onclick = function () {
+        document.body.removeChild(form);
+        mainTable.style.display = "table";
+        addPiece(chessBoard, new Figure(promotionPieceType, getNextPlayerColor(), newRow, newCol), true);
+        promotionPieceType = null;
+    };
+
+    for (var pieceName in FigureType) {
+        if (FigureType.hasOwnProperty(pieceName)) {
+            if (pieceName == FigureType.none ||
+                pieceName == FigureType.pawn || pieceName == FigureType.king) {
+
+                continue;
+            }
+
+            var id = "promotion_" + pieceName.toLowerCase();
+            var radio = document.createElement("input");
+            radio.type = "radio";
+            radio.name = "radio_promotion";
+            radio.id = id;
+            radio.value = pieceName.toUpperCase();
+            radio.onclick = function () {
+                promotionPieceType = this.id.slice("promotion_".length);
+            };
+
+            if (pieceName == FigureType.queen) {
+                radio.checked = "checked";
+                promotionPieceType = "queen";
+            }
+
+            var label = document.createElement("label");
+            label.htmlFor = id;
+            label.innerHTML = pieceName.capitalizeFirstLetter();
+            div.appendChild(radio);
+            div.appendChild(label);
+            div.appendChild(document.createElement("br"));
+        }
+    }
+
+    form.appendChild(div);
+    form.appendChild(document.createElement("br"));
+    form.appendChild(button);
+
+    document.body.appendChild(form);
+    mainTable.style.display = "none";
+}
+
+// TODO: Implement En Passant
+// TODO: Use better graphical way to check king
