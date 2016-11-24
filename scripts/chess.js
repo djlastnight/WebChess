@@ -1189,3 +1189,4 @@ function showPromotionDialog(chessBoard, newRow, newCol) {
 
 // TODO: Implement En Passant
 // TODO: Use better graphical way to check king
+// TODO: Look for check king after promotion
