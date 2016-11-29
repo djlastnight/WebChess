@@ -13,7 +13,6 @@ highlightImageSource = "images/underlay_highlight.png";
 captionImageSource = "images/underlay_capture.png";
 castlingImageSource = "images/underlay_castling.png";
 checkImageSource = "images/underlay_check.png";
-lastMoveMarkerImageSource = "images/old_place.png";
 selectedImage = null;
 isWhiteAtBottom = null;
 currentPlayerColor = null;
@@ -24,7 +23,6 @@ isGameOver = false;
 gameOverReason = "";
 kingInCheckColor = null;
 promotionPieceType = null;
-
 
 // String extension method
 String.prototype.capitalizeFirstLetter = function () {
@@ -260,7 +258,18 @@ function move(element, oldRow, newRow, oldCol, newCol, targetCell) {
     newCol = Number(newCol);
     var sourceCell = document.getElementById("cell_" + oldRow + oldCol);
 
-    applyCheckMarkers(chessBoard, oldRow, newRow, oldCol, newCol, getNextPlayerColor());
+    // Removing the king check marks if we have previously added
+    var blackKingLoc = findKingLocation(chessBoard, FigureColor.black);
+    var whiteKingLoc = findKingLocation(chessBoard, FigureColor.white);
+    setVisualKingCheck(chessBoard, blackKingLoc, FigureColor.black, false);
+    setVisualKingCheck(chessBoard, whiteKingLoc, FigureColor.white, false);
+
+    // Marking opponent's king if it will be in check after the current move
+    var nextPlayerColor = getNextPlayerColor();
+    var kingColor = nextPlayerColor == PlayerColor.black ? FigureColor.black : FigureColor.white;
+    var isKingInCheck = willBeKingInCheck(chessBoard, kingColor, oldRow, newRow, oldCol, newCol);
+    var kingLoc = findKingLocation(chessBoard, kingColor);
+    setVisualKingCheck(chessBoard, kingLoc, kingColor, isKingInCheck);
 
     var virtualBoard = virtualMove(chessBoard, oldRow, newRow, oldCol, newCol);
     var opponentHasMoves = false;
@@ -324,29 +333,6 @@ function move(element, oldRow, newRow, oldCol, newCol, targetCell) {
     }
 
     return true;
-}
-
-function applyCheckMarkers(chessBoard, oldRow, newRow, oldCol, newCol, kingColorToCheck) {
-    // Removing the check markers
-    var blackKingLoc = findKingLocation(chessBoard, FigureColor.black);
-    var whiteKingLoc = findKingLocation(chessBoard, FigureColor.white);
-    var blackKingCell = document.getElementById("cell_" + blackKingLoc[0] + blackKingLoc[1]);
-    var whiteKingCell = document.getElementById("cell_" + whiteKingLoc[0] + whiteKingLoc[1]);
-    var blackKingImage = blackKingCell.getElementsByTagName("img")[0];
-    var whiteKingImage = whiteKingCell.getElementsByTagName("img")[0];
-    blackKingImage.style.border = "";
-    whiteKingImage.style.border = "";
-
-    // Marking opponent's king if it will be in check after the current move
-    var isKingInCheck = willBeKingInCheck(chessBoard, kingColorToCheck, oldRow, newRow, oldCol, newCol);
-    if (isKingInCheck) {
-        var kingLoc = findKingLocation(chessBoard, kingColorToCheck);
-        var kingImg = getFigureImage(chessBoard, kingLoc[0], kingLoc[1]);
-        kingImg.style.border = "3px solid red";
-        kingInCheckColor = kingColorToCheck;
-    } else {
-        kingInCheckColor = null;
-    }
 }
 
 function capturePiece(capturedPiece) {
@@ -875,7 +861,12 @@ function addPiece(chessBoard, figure, isPromotion) {
     chessBoard.rows[row].cells[col].innerHTML = figureImage.outerHTML;
 
     if (isPromotion) {
-        applyCheckMarkers(chessBoard, row, row, col, col, currentPlayerColor);
+        var kingColor = figure.figureColor == FigureColor.black ? FigureColor.white : FigureColor.black;
+        var kingLocation = findKingLocation(chessBoard, kingColor);
+        var isOpponentKingInCheckAfterThePromotion = isCellUnderAttack(chessBoard, kingLocation[0], kingLocation[1], kingColor);
+        if (isOpponentKingInCheckAfterThePromotion) {
+            setVisualKingCheck(chessBoard, kingLocation, kingColor, true);
+        }
     }
 }
 
@@ -917,6 +908,8 @@ function resetCells() {
 
     selectedImage = null;
 }
+
+showColorChooserForm();
 
 function findKingLocation(chessBoard, kingColor) {
     if (kingColor != FigureColor.black &&
@@ -978,10 +971,9 @@ function isLegalCastlingMove(chessBoard, kingColor, newRow, newCol) {
     var absDeltaCol = Math.abs(kingCol - newCol);
 
     if (absDeltaCol != 2) {
-        // Castling is allowed only, when king makes 2 moves left or right
         return false;
     }
-    
+
     var isKingMoved = getFigureImage(chessBoard, kingRow, kingCol).dataset.isMoved == "true";
     if (isKingMoved) {
         // Castling is not allowed, when the King has been moved
@@ -1179,8 +1171,17 @@ function showPromotionDialog(chessBoard, newRow, newCol) {
     mainTable.style.display = "none";
 }
 
-showColorChooserForm();
+function setVisualKingCheck(chessBoard, kingLocation, kingColor, mark) {
+    var kingImg = getFigureImage(chessBoard, kingLocation[0], kingLocation[1]);
+    if (mark) {
+        kingImg.style.border = "3px solid red";
+        kingInCheckColor = kingColor;
+    } else {
+        kingImg.style.border = "";
+        kingInCheckColor = null;
+    }
 
+}
 // TODO: Implement En Passant
 // TODO: Use better graphical way to check king
 // TODO: Look for check king after promotion
