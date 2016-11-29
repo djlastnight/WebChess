@@ -369,6 +369,14 @@ function capturePiece(capturedPiece) {
     var newCell = rows[0].insertCell(0);
     newCell.style.display = "block";
     newCell.appendChild(capturedPiece);
+
+    // Checking for draw game due to insufficient material
+    var capturedPieces = document.getElementsByClassName("captured");
+    for (var i in capturedPieces) {
+        var piece = capturedPieces[i];
+    }
+
+    alert("TODO: finish the implementation!");
 }
 
 function isPossibleMove(chessBoard, oldRow, newRow, oldCol, newCol, fType, fColor) {
@@ -1182,6 +1190,42 @@ function setVisualKingCheck(chessBoard, kingLocation, kingColor, mark) {
     }
 
 }
+
+// NOT TESTED
+//function getPieceCount(chessBoard, figureType, figureColor) {
+//    var pieces = [];
+//    for (var i = 0; i < 8; i++) {
+//        for (var j = 0; j < 8; j++) {
+//            var img = getFigureImage(chessBoard, i, j);
+//            if (img == null) {
+//                // No piece on this cell
+//                continue;
+//            }
+
+//            var fType = img.dataset.figureType;
+//            if (fType != figureType) {
+//                // Different figure type
+//                continue;
+//            }
+
+//            var fColor = img.dataset.figureColor;
+//            if (fColor != figureColor) {
+//                // Different figure color
+//                continue;
+//            }
+
+//            pieces.push(new Figure(fType, fColor, i, j));
+//        }
+//    }
+
+//    return pieces.length;
+//}
+
 // TODO: Implement En Passant
-// TODO: Use better graphical way to check king
-// TODO: Look for check king after promotion
+/*
+TODO: End the game with draw if there are:
+- king against king
+- king against king and bishop;
+- king against king and knight;
+- king and bishop against king and bishop, with both bishops on squares of the same color
+*/
