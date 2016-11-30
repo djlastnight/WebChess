@@ -310,7 +310,12 @@ function move(element, oldRow, newRow, oldCol, newCol, targetCell) {
     var targetImages = targetCell.getElementsByTagName("img");
     if (targetImages.length == 1) {
         var capturedPiece = targetImages[0];
-        capturePiece(capturedPiece);
+        var isGameDraw = capturePiece(capturedPiece);
+        if (isGameDraw) {
+            gameOverReason = "Game counted as draw due to insufficient material!";
+            alert(gameOverReason);
+            return false;
+        }
     }
 
     if (targetCell.style.backgroundImage.indexOf(castlingImageSource) != -1) {
@@ -370,13 +375,7 @@ function capturePiece(capturedPiece) {
     newCell.style.display = "block";
     newCell.appendChild(capturedPiece);
 
-    // Checking for draw game due to insufficient material
-    var capturedPieces = document.getElementsByClassName("captured");
-    for (var i in capturedPieces) {
-        var piece = capturedPieces[i];
-    }
-
-    alert("TODO: finish the implementation!");
+    return checkForInsufficientMaterial();
 }
 
 function isPossibleMove(chessBoard, oldRow, newRow, oldCol, newCol, fType, fColor) {
@@ -1191,41 +1190,93 @@ function setVisualKingCheck(chessBoard, kingLocation, kingColor, mark) {
 
 }
 
-// NOT TESTED
-//function getPieceCount(chessBoard, figureType, figureColor) {
-//    var pieces = [];
-//    for (var i = 0; i < 8; i++) {
-//        for (var j = 0; j < 8; j++) {
-//            var img = getFigureImage(chessBoard, i, j);
-//            if (img == null) {
-//                // No piece on this cell
-//                continue;
-//            }
+function getPieces(chessBoard) {
+    var pieces = [];
+    for (var i = 0; i < 8; i++) {
+        for (var j = 0; j < 8; j++) {
+            var img = getFigureImage(chessBoard, i, j);
+            if (img == null) {
+                // No piece on this cell
+                continue;
+            }
 
-//            var fType = img.dataset.figureType;
-//            if (fType != figureType) {
-//                // Different figure type
-//                continue;
-//            }
+            pieces.push(new Figure(img.dataset.figureType, img.dataset.figureColor, i, j));
+        }
+    }
 
-//            var fColor = img.dataset.figureColor;
-//            if (fColor != figureColor) {
-//                // Different figure color
-//                continue;
-//            }
+    return pieces;
+}
 
-//            pieces.push(new Figure(fType, fColor, i, j));
-//        }
-//    }
+function checkForInsufficientMaterial() {
+    var chessBoard = document.getElementById("chess_table");
+    var pieces = getPieces(chessBoard);
+    if (pieces.length == 2) {
+        // King against king
+        return true;
+    }
 
-//    return pieces.length;
-//}
+    var bishops = pieces.filter(function (x) {
+        if (x.figureType == FigureType.bishop) {
+            return true;
+        }
+
+        return false;
+    });
+
+    var knights = pieces.filter(function (x) {
+        if (x.figureType == FigureType.knight) {
+            return true;
+        }
+
+        return false;
+    });
+
+    if (pieces.length == 3 && (bishops.length == 1 || knights.length == 1)) {
+        // King against king and bishop
+        // or
+        // King against king and knight
+        return true;
+    }
+
+    if (pieces.length == 4 && bishops.length == 2) {
+        var whiteBishops = bishops.filter(function (x) {
+            if (x.figureColor == FigureColor.white) {
+                return true;
+            }
+
+            return false;
+        });
+
+
+        if (whiteBishops.length == 1) {
+            // King and bishop against king and bishop
+            // We have to check if bishops are of the same color
+            var blackBishops = bishops.filter(function (x) {
+                if (x.figureColor == FigureColor.black) {
+                    return true;
+                }
+
+                return false;
+            });
+
+            var whiteBishop = whiteBishops[0];
+            var blackBishop = blackBishops[0];
+
+            var whiteBishopCell = document.getElementById("cell_" + whiteBishop.figureLocation.row + whiteBishop.figureLocation.col);
+            var blackBishopCell = document.getElementById("cell_" + blackBishop.figureLocation.row + blackBishop.figureLocation.col);
+
+            var isWhiteBishopOnWhiteSquare = whiteBishopCell.style.backgroundImage.indexOf("white") != -1;
+            var isBlackBishopOnWhiteSquare = blackBishopCell.style.backgroundImage.indexOf("white") != -1;
+
+            if ((isWhiteBishopOnWhiteSquare && isBlackBishopOnWhiteSquare) ||
+                (!isWhiteBishopOnWhiteSquare && !isBlackBishopOnWhiteSquare)) {
+                // Both bishops are on squares of the same color
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
 
 // TODO: Implement En Passant
-/*
-TODO: End the game with draw if there are:
-- king against king
-- king against king and bishop;
-- king against king and knight;
-- king and bishop against king and bishop, with both bishops on squares of the same color
-*/
