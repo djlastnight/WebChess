@@ -59,14 +59,14 @@ function PieceLocation(row, col) {
 }
 
 // Piece constructor
-function piece(pieceType, pieceColor, row, col) {
+function Piece(pieceType, pieceColor, row, col) {
     this.pieceType = pieceType;
     this.pieceColor = pieceColor;
     this.pieceLocation = new PieceLocation(row, col);
 }
 
 // Piece toString() override
-piece.prototype.toString = function () {
+Piece.prototype.toString = function () {
     var str = this.pieceColor + " " + this.pieceType + " on Row " +
 	this.pieceLocation.row + ", Column " + this.pieceLocation.col;
 
@@ -148,7 +148,7 @@ function isCellHighlighted(row, col) {
 }
 
 // Returns PieceColor.white || PieceColor.black || null
-function getpieceColor(chessBoard, row, col) {
+function getPieceColor(chessBoard, row, col) {
     var target = chessBoard.rows[row].cells[col];
     var subImages = target.getElementsByTagName("img");
     if (subImages.length == 0) {
@@ -158,7 +158,7 @@ function getpieceColor(chessBoard, row, col) {
     return target.getElementsByTagName("img")[0].dataset.pieceColor;
 }
 
-function getpieceImage(chessBoard, row, col) {
+function getPieceImage(chessBoard, row, col) {
     var target = chessBoard.rows[row].cells[col];
     var subImages = target.getElementsByTagName("img");
     if (subImages.length == 0) {
@@ -171,7 +171,7 @@ function getpieceImage(chessBoard, row, col) {
 
 function findMaxWayUp(chessBoard, startRow, startCol) {
     while (startRow > 0) {
-        if (getpieceColor(chessBoard, --startRow, startCol) != null) {
+        if (getPieceColor(chessBoard, --startRow, startCol) != null) {
             break;
         }
     }
@@ -181,7 +181,7 @@ function findMaxWayUp(chessBoard, startRow, startCol) {
 
 function findMaxWayDown(chessBoard, startRow, startCol) {
     while (startRow < 7) {
-        if (getpieceColor(chessBoard, ++startRow, startCol) != null) {
+        if (getPieceColor(chessBoard, ++startRow, startCol) != null) {
             break;
         }
     }
@@ -191,7 +191,7 @@ function findMaxWayDown(chessBoard, startRow, startCol) {
 
 function findMaxWayLeft(chessBoard, startRow, startCol) {
     while (startCol > 0) {
-        if (getpieceColor(chessBoard, startRow, --startCol) != null) {
+        if (getPieceColor(chessBoard, startRow, --startCol) != null) {
             break;
         }
     }
@@ -201,7 +201,7 @@ function findMaxWayLeft(chessBoard, startRow, startCol) {
 
 function findMaxWayRight(chessBoard, startRow, startCol) {
     while (startCol < 7) {
-        if (getpieceColor(chessBoard, startRow, ++startCol) != null) {
+        if (getPieceColor(chessBoard, startRow, ++startCol) != null) {
             break;
         }
     }
@@ -211,7 +211,7 @@ function findMaxWayRight(chessBoard, startRow, startCol) {
 
 function findMaxWayUpLeft(chessBoard, startRow, startCol) {
     while (startRow > 0 && startCol > 0) {
-        if (getpieceColor(chessBoard, --startRow, --startCol) != null) {
+        if (getPieceColor(chessBoard, --startRow, --startCol) != null) {
             break;
         }
     }
@@ -221,7 +221,7 @@ function findMaxWayUpLeft(chessBoard, startRow, startCol) {
 
 function findMaxWayUpRight(chessBoard, startRow, startCol) {
     while (startRow > 0 && startCol < 7) {
-        if (getpieceColor(chessBoard, --startRow, ++startCol) != null) {
+        if (getPieceColor(chessBoard, --startRow, ++startCol) != null) {
             break;
         }
     }
@@ -231,7 +231,7 @@ function findMaxWayUpRight(chessBoard, startRow, startCol) {
 
 function findMaxWayDownLeft(chessBoard, startRow, startCol) {
     while (startRow < 7 && startCol > 0) {
-        if (getpieceColor(chessBoard, ++startRow, --startCol) != null) {
+        if (getPieceColor(chessBoard, ++startRow, --startCol) != null) {
             break;
         }
     }
@@ -241,7 +241,7 @@ function findMaxWayDownLeft(chessBoard, startRow, startCol) {
 
 function findMaxWayDownRight(chessBoard, startRow, startCol) {
     while (startRow < 7 && startCol < 7) {
-        if (getpieceColor(chessBoard, ++startRow, ++startCol) != null) {
+        if (getPieceColor(chessBoard, ++startRow, ++startCol) != null) {
             break;
         }
     }
@@ -322,7 +322,7 @@ function move(element, oldRow, newRow, oldCol, newCol, targetCell) {
         // King makes a castling - Moving the rook now
         var rookOldCol = newCol > 4 ? 7 : 0;
         var rookNewCol = rookOldCol == 0 ? newCol + 1 : newCol - 1;
-        var rookSourceImg = getpieceImage(chessBoard, newRow, rookOldCol);
+        var rookSourceImg = getPieceImage(chessBoard, newRow, rookOldCol);
         var rookTargetCell = document.getElementById("cell_" + newRow + rookNewCol);
         move(rookSourceImg, oldRow, newRow, rookOldCol, rookNewCol, rookTargetCell);
     }
@@ -397,7 +397,7 @@ function isPossibleMove(chessBoard, oldRow, newRow, oldCol, newCol, fType, fColo
     var bottomLeftBorder = findMaxWayDownLeft(chessBoard, oldRow, oldCol);
     var bottomRightBorder = findMaxWayDownRight(chessBoard, oldRow, oldCol);
 
-    var targetColor = getpieceColor(chessBoard, newRow, newCol);
+    var targetColor = getPieceColor(chessBoard, newRow, newCol);
 
     if (targetColor == fColor) {
         return false;
@@ -454,7 +454,7 @@ function isPossibleMove(chessBoard, oldRow, newRow, oldCol, newCol, fType, fColo
                 }
 
                 var isTargetEmpty = targetColor == null;
-                var isNextRowEmpty = getpieceColor(chessBoard, nextRow, oldCol) == null;
+                var isNextRowEmpty = getPieceColor(chessBoard, nextRow, oldCol) == null;
                 var isSingleMove = (oldCol == newCol) && absDeltaRow == 1 && isTargetEmpty;
                 var isDoubleMove = (oldCol == newCol) && isDefaultSquare && absDeltaRow == 2 && !isCellHighlighted(doubleMoveRow, oldCol) && isNextRowEmpty && isTargetEmpty;
                 var isDiagonalMove = absDeltaRow == 1 && absDeltaCol == 1 && isTargetEmpty == false;
@@ -574,7 +574,7 @@ function onCellClick(cell) {
     var chessBoard = document.getElementById("chess_table");
     var newRow = cell.dataset.row;
     var newCol = cell.dataset.col;
-    var haspiece = getpieceColor(chessBoard, newRow, newCol) != null;
+    var haspiece = getPieceColor(chessBoard, newRow, newCol) != null;
     var isHighlighted = isCellHighlighted(newRow, newCol);
     if (!haspiece && !isHighlighted) {
         resetCells();
@@ -609,7 +609,7 @@ function onCellClick(cell) {
         return;
     }
 
-    var newImageColor = getpieceColor(chessBoard, newRow, newCol);
+    var newImageColor = getPieceColor(chessBoard, newRow, newCol);
     if (currentPlayerColor != newImageColor) {
         var messageLine1 = "It's " + currentPlayerColor + "'s turn!";
         var messageLine2 = "Click a " + currentPlayerColor + " piece to move it!";
@@ -748,7 +748,7 @@ function highlightPossibleMoves(chessBoard, row, col) {
                 highlights++;
                 chessBoard.rows[i].cells[j].style.background = "transparent url('" + highlightImageSource + "') no-repeat center";
                 chessBoard.rows[i].cells[j].style.backgroundSize = numberSelector.value + "px " + numberSelector.value + "px";
-                var targetColor = getpieceColor(chessBoard, i, j);
+                var targetColor = getPieceColor(chessBoard, i, j);
                 if (targetColor != null && targetColor != fColor) {
                     // Highligthing the piece, which we can capture
                     chessBoard.rows[i].cells[j].style.background = "transparent url('" + captionImageSource + "') no-repeat center";
@@ -761,7 +761,7 @@ function highlightPossibleMoves(chessBoard, row, col) {
     return highlights;
 }
 
-function createpiece(row, col) {
+function createPiece(row, col) {
     var n = 8;
     var isFirstOrLastRow = !(row % (n - 1));
     var isPenultimateRow = row == 1 || row == 6;
@@ -779,32 +779,32 @@ function createpiece(row, col) {
     var isKing = isWhiteAtBottom ? col == 4 : col == 3;
 
     if (isPenultimateRow) {
-        return new piece(PieceType.pawn, color, row, col);;
+        return new Piece(PieceType.pawn, color, row, col);;
     }
 
     if (isFirstOrLastRow) {
         if (isRook) {
-            return new piece(PieceType.rook, color, row, col);
+            return new Piece(PieceType.rook, color, row, col);
         }
 
         if (isKnight) {
-            return new piece(PieceType.knight, color, row, col);
+            return new Piece(PieceType.knight, color, row, col);
         }
 
         if (isBishop) {
-            return new piece(PieceType.bishop, color, row, col);
+            return new Piece(PieceType.bishop, color, row, col);
         }
 
         if (isQueen) {
-            return new piece(PieceType.queen, color, row, col);
+            return new Piece(PieceType.queen, color, row, col);
         }
 
         if (isKing) {
-            return new piece(PieceType.king, color, row, col);
+            return new Piece(PieceType.king, color, row, col);
         }
     }
 
-    return new piece(PieceType.none, color, row, col);
+    return new Piece(PieceType.none, color, row, col);
 }
 
 function drawChessBoard() {
@@ -831,15 +831,15 @@ function drawChessBoard() {
     table.appendChild(tableBody);
 
     board.appendChild(table);
-    addDefaultpieces();
+    addDefaultPieces();
     resetCells();
 }
 
-function addDefaultpieces() {
+function addDefaultPieces() {
     var chessBoard = document.getElementById("chess_table");
     for (var i = 0; i < 8; i++) {
         for (var j = 0; j < 8; j++) {
-            var piece = createpiece(i, j);
+            var piece = createPiece(i, j);
             if (piece.pieceType == PieceType.none) {
                 continue;
             }
@@ -927,7 +927,7 @@ function findKingLocation(chessBoard, kingColor) {
 
     for (var i = 0; i < 8; i++) {
         for (var j = 0; j < 8; j++) {
-            var color = getpieceColor(chessBoard, i, j);
+            var color = getPieceColor(chessBoard, i, j);
             if (color == kingColor) {
                 var cell = chessBoard.rows[i].cells[j];
                 var images = cell.getElementsByTagName("img");
@@ -981,7 +981,7 @@ function isLegalCastlingMove(chessBoard, kingColor, newRow, newCol) {
         return false;
     }
 
-    var isKingMoved = getpieceImage(chessBoard, kingRow, kingCol).dataset.isMoved == "true";
+    var isKingMoved = getPieceImage(chessBoard, kingRow, kingCol).dataset.isMoved == "true";
     if (isKingMoved) {
         // Castling is not allowed, when the King has been moved
         return false;
@@ -1032,7 +1032,7 @@ function isRookHasBeenMoved(chessBoard, isBlack, isLeft) {
     }
 
     var targetCol = isLeft ? 0 : 7;
-    var pieceToCheck = getpieceImage(chessBoard, targetRow, targetCol);
+    var pieceToCheck = getPieceImage(chessBoard, targetRow, targetCol);
     if (pieceToCheck == null) {
         return true;
     }
@@ -1088,7 +1088,7 @@ function getOpponentPieces(chessBoard, playerColor) {
             var fType = img.dataset.pieceType;
             var fColor = img.dataset.pieceColor;
             if (fColor != playerColor) {
-                opponentPieces.push(new piece(fType, fColor, i, j));
+                opponentPieces.push(new Piece(fType, fColor, i, j));
             }
         }
     }
@@ -1134,11 +1134,11 @@ function showPromotionDialog(chessBoard, newRow, newCol) {
     button.onclick = function () {
         document.body.removeChild(form);
         mainTable.style.display = "table";
-        addPiece(chessBoard, new piece(promotionPieceType, getNextPlayerColor(), newRow, newCol), true);
+        addPiece(chessBoard, new Piece(promotionPieceType, getNextPlayerColor(), newRow, newCol), true);
         promotionPieceType = null;
     };
 
-    for (var pieceName in pieceType) {
+    for (var pieceName in PieceType) {
         if (PieceType.hasOwnProperty(pieceName)) {
             if (pieceName == PieceType.none ||
                 pieceName == PieceType.pawn || pieceName == PieceType.king) {
@@ -1179,7 +1179,7 @@ function showPromotionDialog(chessBoard, newRow, newCol) {
 }
 
 function setVisualKingCheck(chessBoard, kingLocation, kingColor, mark) {
-    var kingImg = getpieceImage(chessBoard, kingLocation[0], kingLocation[1]);
+    var kingImg = getPieceImage(chessBoard, kingLocation[0], kingLocation[1]);
     if (mark) {
         kingImg.style.border = "3px solid red";
         kingInCheckColor = kingColor;
@@ -1194,13 +1194,13 @@ function getPieces(chessBoard) {
     var pieces = [];
     for (var i = 0; i < 8; i++) {
         for (var j = 0; j < 8; j++) {
-            var img = getpieceImage(chessBoard, i, j);
+            var img = getPieceImage(chessBoard, i, j);
             if (img == null) {
                 // No piece on this cell
                 continue;
             }
 
-            pieces.push(new piece(img.dataset.pieceType, img.dataset.pieceColor, i, j));
+            pieces.push(new Piece(img.dataset.pieceType, img.dataset.pieceColor, i, j));
         }
     }
 
