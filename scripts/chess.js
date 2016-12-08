@@ -13,6 +13,7 @@ highlightImageSource = "images/underlay_highlight.png";
 captionImageSource = "images/underlay_capture.png";
 castlingImageSource = "images/underlay_castling.png";
 checkImageSource = "images/underlay_check.png";
+enPassantImageSource = "images/underlay_en_passant.png";
 selectedImage = null;
 isWhiteAtBottom = null;
 currentPlayerColor = null;
@@ -327,23 +328,80 @@ function move(element, oldRow, newRow, oldCol, newCol, targetCell) {
         move(rookSourceImg, oldRow, newRow, rookOldCol, rookNewCol, rookTargetCell);
     }
 
+    if (targetCell.style.backgroundImage.indexOf(enPassantImageSource) != -1) {
+        // Making En Passant move and capturing the opponent pawn
+        var enPassantRow = element.dataset.enPassantPieceRow;
+        var enPassantCol = element.dataset.enPassantPieceCol;
+        capturePiece(getPieceImage(chessBoard, enPassantRow, enPassantCol));
+    }
+
     targetCell.innerHTML = "";
     targetCell.appendChild(element);
     sourceCell.innerHTML = "";
 
+    // Removing all en passant datasets
+    for (var i = 0; i < 8; i++) {
+        for (var j = 0; j < 8; j++) {
+            var img = getPieceImage(chessBoard, i, j);
+            if (img != null && img.dataset.pieceType == PieceType.pawn) {
+                delete img.dataset.isEnPassant;
+                delete img.dataset.enPassantMoveRow;
+                delete img.dataset.enPassantMoveCol;
+                delete img.dataset.enPassantPieceRow;
+                delete img.dataset.enPassantPieceCol;
+            }
+        }
+    }
+
     if (element.dataset.pieceType == PieceType.pawn) {
         if (newRow % 7 == 0) {
             showPromotionDialog(chessBoard, newRow, newCol);
+        } else {
+            // Checking for En Passant
+            var deltaRow = oldRow - newRow;
+            if (Math.abs(deltaRow) == 2) {
+                var leftCol = newCol - 1;
+                var rightCol = newCol + 1;
+                var enPassantLeft;
+                var enPassantRight;
+
+                if (leftCol >= 0) {
+                    enPassantLeft = getPieceImage(chessBoard, newRow, newCol - 1);
+                }
+
+                if (rightCol <= 7) {
+                    enPassantRight = getPieceImage(chessBoard, newRow, newCol + 1);
+                }
+
+                if (enPassantLeft &&
+                        enPassantLeft.dataset.pieceType == PieceType.pawn &&
+                        enPassantLeft.dataset.pieceColor != element.dataset.pieceColor) {
+                    enPassantLeft.dataset.isEnPassant = true;
+                    enPassantLeft.dataset.enPassantMoveRow = deltaRow > 0 ? newRow + 1 : newRow - 1;
+                    enPassantLeft.dataset.enPassantMoveCol = newCol;
+                    enPassantLeft.dataset.enPassantPieceRow = newRow;
+                    enPassantLeft.dataset.enPassantPieceCol = newCol;
+                }
+
+                if (enPassantRight &&
+                        enPassantRight.dataset.pieceType == PieceType.pawn &&
+                        enPassantRight.dataset.pieceColor != element.dataset.pieceColor) {
+                    enPassantRight.dataset.isEnPassant = true;
+                    enPassantRight.dataset.enPassantMoveRow = deltaRow > 0 ? newRow + 1 : newRow - 1;
+                    enPassantRight.dataset.enPassantMoveCol = newCol;
+                    enPassantRight.dataset.enPassantPieceRow = newRow;
+                    enPassantRight.dataset.enPassantPieceCol = newCol;
+                }
+            }
         }
     }
 
     return true;
 }
 
-function capturePiece(capturedPiece) {
-    var pieceColor = capturedPiece.dataset.pieceColor;
+function capturePiece(capturedPieceImage) {
+    var pieceColor = capturedPieceImage.dataset.pieceColor;
     var container = document.getElementById("captured_" + pieceColor);
-    var angle = pieceColor == PieceColor.white ? 0 : 180;
 
     // Lazy load pattern
     if (container.getElementsByTagName("table").length == 0) {
@@ -370,10 +428,10 @@ function capturePiece(capturedPiece) {
     }
 
     // Inserting the captured piece into its capture container
-    capturedPiece.className = "captured";
+    capturedPieceImage.className = "captured";
     var newCell = rows[0].insertCell(0);
     newCell.style.display = "block";
-    newCell.appendChild(capturedPiece);
+    newCell.appendChild(capturedPieceImage);
 
     return checkForInsufficientMaterial();
 }
@@ -755,6 +813,13 @@ function highlightPossibleMoves(chessBoard, row, col) {
                     chessBoard.rows[i].cells[j].style.backgroundSize = numberSelector.value + "px " + numberSelector.value + "px";
                 }
             }
+
+            if (img.dataset.isEnPassant && img.dataset.enPassantMoveRow == i && img.dataset.enPassantMoveCol == j) {
+                highlights++;
+                // Hightlighting the en passant capture move
+                chessBoard.rows[i].cells[j].style.background = "transparent url('" + enPassantImageSource + "') no-repeat center";
+                chessBoard.rows[i].cells[j].style.backgroundSize = numberSelector.value + "px " + numberSelector.value + "px";
+            }
         }
     }
 
@@ -873,6 +938,31 @@ function addPiece(chessBoard, piece, isPromotion) {
         var isOpponentKingInCheckAfterThePromotion = isCellUnderAttack(chessBoard, kingLocation[0], kingLocation[1], kingColor);
         if (isOpponentKingInCheckAfterThePromotion) {
             setVisualKingCheck(chessBoard, kingLocation, kingColor, true);
+        }
+
+        var clonedBoard = chessBoard.cloneNode(true);
+        var opponentHasMoves = false;
+        var opponentPieces = getOpponentPieces(chessBoard, piece.pieceColor);
+        for (var i in opponentPieces) {
+            var opponentPiece = opponentPieces[i];
+            var highlightsCount = highlightPossibleMoves(clonedBoard, opponentPiece.pieceLocation.row, opponentPiece.pieceLocation.col);
+            if (highlightsCount > 0) {
+                opponentHasMoves = true;
+                break;
+            }
+        }
+
+        if (!opponentHasMoves) {
+            // Game over
+            if (isOpponentKingInCheckAfterThePromotion) {
+                gameOverReason = piece.pieceColor.capitalizeFirstLetter() + " player wins the game by checkmate!";
+            }
+            else {
+                gameOverReason = "Game counted as draw, due to stalemate!";
+            }
+
+            isGameOver = true;
+            alert(gameOverReason);
         }
     }
 }
