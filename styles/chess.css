@@ -37,6 +37,6 @@ table#main_table {
     text-align: center;
     vertical-align: middle;
     border: 10px ridge gray;
-    background-image: url("/../images/marble.jpg");
+    background-image: url("../images/marble.jpg");
     visibility: hidden;
 }
